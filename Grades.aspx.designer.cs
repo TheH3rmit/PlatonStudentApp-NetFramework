@@ -11,25 +11,16 @@ namespace PlatonStudentApp
 {
 
 
-    public partial class SiteMaster
+    public partial class Grades
     {
 
         /// <summary>
-        /// LoggedInUserLabel control.
+        /// GradesGridView control.
         /// </summary>
         /// <remarks>
         /// Auto-generated field.
         /// To modify move field declaration from designer file to code-behind file.
         /// </remarks>
-        protected global::System.Web.UI.WebControls.Label LoggedInUserLabel;
-
-        /// <summary>
-        /// MainContent control.
-        /// </summary>
-        /// <remarks>
-        /// Auto-generated field.
-        /// To modify move field declaration from designer file to code-behind file.
-        /// </remarks>
-        protected global::System.Web.UI.WebControls.ContentPlaceHolder MainContent;
+        protected global::System.Web.UI.WebControls.GridView GradesGridView;
     }
 }

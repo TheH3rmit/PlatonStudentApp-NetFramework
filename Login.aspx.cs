@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Web;
@@ -10,6 +11,7 @@ namespace PlatonStudentApp
 {
     public partial class Login : System.Web.UI.Page
     {
+        private string connectionString;
         protected void Page_Load(object sender, EventArgs e)
         {
 
@@ -17,40 +19,55 @@ namespace PlatonStudentApp
 
         protected void LoginButton_Click(object sender, EventArgs e)
         {
-            string username = UsernameTextBox.Text; // Get username from the form
-            string password = PasswordTextBox.Text; // Get password from the form
+            string username = UsernameTextBox.Text;
+            string password = PasswordTextBox.Text;
 
-            // SQL connection string
-            using (SqlConnection conn = new SqlConnection("YourConnectionString"))
+            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["ConnectionString"].ConnectionString))
             {
-                // SQL query to check username and password
-                string query = "SELECT Role FROM Users WHERE Username = @Username AND Password = @Password";
+                string query = "SELECT UserID, Role FROM Users WHERE Username = @Username AND Password = @Password";
                 SqlCommand cmd = new SqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@Username", username);
                 cmd.Parameters.AddWithValue("@Password", password);
 
                 conn.Open();
-                var role = cmd.ExecuteScalar(); // Executes the query and gets the Role (Admin/Student)
+                SqlDataReader reader = cmd.ExecuteReader();
 
-                if (role != null) // If a matching user is found
+                if (reader.Read())
                 {
-                    // Save the username and role in the session
-                    Session["Username"] = username;
-                    Session["Role"] = role.ToString();
+                    int userId = Convert.ToInt32(reader["UserID"]);
+                    string role = reader["Role"].ToString();
+
+                    // Store username and role in the session
+                    Session["Username"] = username; 
+                    Session["Role"] = role; 
 
                     // Redirect based on role
-                    if (role.ToString() == "Admin")
+                    if (role == "Student")
+                    {
+                        // Retrieve StudentID and store it in session
+                        reader.Close();
+                        string studentQuery = "SELECT StudentID FROM Students WHERE UserID = @UserID";
+                        SqlCommand studentCmd = new SqlCommand(studentQuery, conn);
+                        studentCmd.Parameters.AddWithValue("@UserID", userId);
+
+                        object studentId = studentCmd.ExecuteScalar();
+                        if (studentId != null)
+                        {
+                            Session["StudentID"] = Convert.ToInt32(studentId);
+                            Response.Redirect("StudentDashboard.aspx");
+                        }
+                        else
+                        {
+                            ErrorMessage.Text = "Student record not found.";
+                        }
+                    }
+                    else if (role == "Admin")
                     {
                         Response.Redirect("AdminDashboard.aspx");
-                    }
-                    else
-                    {
-                        Response.Redirect("StudentDashboard.aspx");
                     }
                 }
                 else
                 {
-                    // Show error message
                     ErrorMessage.Text = "Invalid Username or Password.";
                 }
             }

@@ -1,22 +1,15 @@
-﻿<%@ Page Language="C#" AutoEventWireup="true" CodeBehind="StudentDashboard.aspx.cs" Inherits="PlatonStudentApp.StudentDashboard" %>
+﻿<%@ Page Title="Student Dashboard" Language="C#" MasterPageFile="~/Site.Master" AutoEventWireup="true" CodeBehind="StudentDashboard.aspx.cs" Inherits="PlatonStudentApp.StudentDashboard" %>
 
-<!DOCTYPE html>
+<asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
+    <h1>Welcome to the Student Dashboard</h1>
+    <h3>Available Courses</h3>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head runat="server">
-    <title></title>
-</head>
-<body>
-    <form id="form1" runat="server">
-        <div>
-            <asp:GridView ID="CoursesGridView" runat="server" AutoGenerateColumns="False">
-    <Columns>
-        <asp:BoundField DataField="CourseID" HeaderText="Course ID" />
-        <asp:BoundField DataField="CourseName" HeaderText="Course Name" />
-        <asp:ButtonField Text="Enroll" CommandName="Enroll" />
-    </Columns>
-</asp:GridView>
-        </div>
-    </form>
-</body>
-</html>
+    <!-- GridView to Display Courses -->
+    <asp:GridView ID="CoursesGridView" runat="server" AutoGenerateColumns="False" OnRowCommand="CoursesGridView_RowCommand">
+        <Columns>
+            <asp:BoundField DataField="CourseID" HeaderText="Course ID" />
+            <asp:BoundField DataField="CourseName" HeaderText="Course Name" />
+            <asp:ButtonField Text="Enroll" CommandName="Enroll" />
+        </Columns>
+    </asp:GridView>
+</asp:Content>
