@@ -17,6 +17,10 @@ namespace PlatonStudentApp
             {
                 LoadStudents();
             }
+            if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
+            {
+                Response.Redirect("Unauthorized.aspx"); // Redirect unauthorized users
+            }
         }
 
         private void LoadStudents()

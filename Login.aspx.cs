@@ -11,7 +11,6 @@ namespace PlatonStudentApp
 {
     public partial class Login : System.Web.UI.Page
     {
-        private string connectionString;
         protected void Page_Load(object sender, EventArgs e)
         {
 
@@ -19,8 +18,8 @@ namespace PlatonStudentApp
 
         protected void LoginButton_Click(object sender, EventArgs e)
         {
-            string username = UsernameTextBox.Text;
-            string password = PasswordTextBox.Text;
+            string username = UsernameTextBox.Text.Trim();
+            string password = PasswordTextBox.Text.Trim();
 
             using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["ConnectionString"].ConnectionString))
             {
@@ -38,40 +37,52 @@ namespace PlatonStudentApp
                     string role = reader["Role"].ToString();
 
                     // Store username and role in the session
-                    Session["Username"] = username; 
-                    Session["Role"] = role; 
+                    Session["Username"] = username;
+                    Session["Role"] = role;
+                    Session["UserID"] = userId; // Store UserID for Teacher or Admin use
 
                     // Redirect based on role
-                    if (role == "Student")
+                    switch (role)
                     {
-                        // Retrieve StudentID and store it in session
-                        reader.Close();
-                        string studentQuery = "SELECT StudentID FROM Students WHERE UserID = @UserID";
-                        SqlCommand studentCmd = new SqlCommand(studentQuery, conn);
-                        studentCmd.Parameters.AddWithValue("@UserID", userId);
+                        case "Student":
+                            // Retrieve StudentID and store it in the session
+                            reader.Close();
+                            string studentQuery = "SELECT StudentID FROM Students WHERE UserID = @UserID";
+                            SqlCommand studentCmd = new SqlCommand(studentQuery, conn);
+                            studentCmd.Parameters.AddWithValue("@UserID", userId);
 
-                        object studentId = studentCmd.ExecuteScalar();
-                        if (studentId != null)
-                        {
-                            Session["StudentID"] = Convert.ToInt32(studentId);
-                            Response.Redirect("StudentDashboard.aspx");
-                        }
-                        else
-                        {
-                            ErrorMessage.Text = "Student record not found.";
-                        }
-                    }
-                    else if (role == "Admin")
-                    {
-                        Response.Redirect("AdminDashboard.aspx");
+                            object studentId = studentCmd.ExecuteScalar();
+                            if (studentId != null)
+                            {
+                                Session["StudentID"] = Convert.ToInt32(studentId);
+                                Response.Redirect("StudentDashboard.aspx");
+                            }
+                            else
+                            {
+                                ErrorMessage.Text = "Student record not found. Please contact support.";
+                            }
+                            break;
+
+                        case "Admin":
+                            Response.Redirect("AdminDashboard.aspx");
+                            break;
+
+                        case "Teacher":
+                            Response.Redirect("TeacherDashboard.aspx");
+                            break;
+
+                        default:
+                            // Handle unexpected roles
+                            ErrorMessage.Text = "Access denied. Invalid role.";
+                            break;
                     }
                 }
                 else
                 {
+                    // Invalid login credentials
                     ErrorMessage.Text = "Invalid Username or Password.";
                 }
             }
         }
-
     }
 }

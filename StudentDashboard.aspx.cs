@@ -19,6 +19,10 @@ namespace PlatonStudentApp
             {
                 LoadCourses(); // Load courses on the first page load
             }
+            if (Session["Role"] == null || Session["Role"].ToString() != "Student")
+            {
+                Response.Redirect("Unauthorized.aspx"); // Redirect unauthorized users
+            }
         }
 
         // Load available courses into the GridView

@@ -11,14 +11,24 @@ namespace PlatonStudentApp
     {
         protected void Page_Load(object sender, EventArgs e)
         {
-            if (Session["Username"] != null)
+            // Check if the user is logged in
+            if (Session["Role"] != null)
             {
-                LoggedInUserLabel.Text = Session["Username"].ToString();
+                // Set the "Logged in as" information
+                LoggedInInfo.Visible = true; // Show the LoggedInInfo PlaceHolder
+                LoggedInUserLabel.Text = Session["Username"] != null
+                    ? Session["Username"].ToString()
+                    : "Unknown User"; // Fallback for missing username
             }
             else
             {
-                LoggedInUserLabel.Text = "Guest";
+                // Hide the "Logged in as" information for guests
+                LoggedInInfo.Visible = false;
             }
+
+            // Role-based visibility for menu links
+            AdminLinks.Visible = (Session["Role"] != null && Session["Role"].ToString() == "Admin");
+            StudentLinks.Visible = (Session["Role"] != null && Session["Role"].ToString() == "Student");
         }
     }
 }

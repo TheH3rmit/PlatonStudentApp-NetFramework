@@ -18,7 +18,7 @@ namespace PlatonStudentApp
 
         protected void RegisterButton_Click(object sender, EventArgs e)
         {
-            string connectionString = ConfigurationManager.ConnectionStrings["DefaultConnection"].ConnectionString;
+            string connectionString = ConfigurationManager.ConnectionStrings["ConnectionString"].ConnectionString;
 
             // Check if the username already exists
             if (IsUsernameTaken(UsernameTextBox.Text, connectionString))

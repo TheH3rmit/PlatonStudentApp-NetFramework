@@ -6,8 +6,6 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title><%: Page.Title %></title>
-
-    <!-- Bootstrap CSS -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet" />
 </head>
 <body>
@@ -23,17 +21,38 @@
                         <li class="nav-item"><a class="nav-link" runat="server" href="~/Default.aspx">Home</a></li>
                         <li class="nav-item"><a class="nav-link" runat="server" href="~/About">About</a></li>
                         <li class="nav-item"><a class="nav-link" runat="server" href="~/Contact">Contact</a></li>
-                        <li class="nav-item"><a class="nav-link" runat="server" href="~/Course.aspx">Courses</a></li>
-                        <li class="nav-item"><a class="nav-link" runat="server" href="~/AdminDashboard.aspx">Admin Dashboard</a></li>
-                        <li class="nav-item"><a class="nav-link" runat="server" href="~/StudentDashboard.aspx">Student Dashboard</a></li>
-                        <li class="nav-item"><a class="nav-link" runat="server" href="~/Grades.aspx">My Grades</a></li>
+
+                        <!-- Admin Links -->
+                        <asp:PlaceHolder ID="AdminLinks" runat="server">
+                            <li class="nav-item">
+                                <a class="nav-link" runat="server" href="~/AdminDashboard.aspx">Admin Dashboard</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" runat="server" href="~/Course.aspx">Manage Courses</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" runat="server" href="~/ManageUsers.aspx">Manage Users</a>
+                            </li>
+                        </asp:PlaceHolder>
+
+                        <!-- Student Links -->
+                        <asp:PlaceHolder ID="StudentLinks" runat="server">
+                            <li class="nav-item">
+                                <a class="nav-link" runat="server" href="~/StudentDashboard.aspx">Student Dashboard</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" runat="server" href="~/Grades.aspx">My Grades</a>
+                            </li>
+                        </asp:PlaceHolder>
                     </ul>
 
-                    <!-- Display Current User Information -->
-                    <span class="navbar-text text-white ml-auto">
-                        Logged in as: <asp:Label ID="LoggedInUserLabel" runat="server" ForeColor="White"></asp:Label>
-                        <a href="Logout.aspx" class="btn btn-danger btn-sm ml-2">Logout</a>
-                    </span>
+                    <!-- Current User Information -->
+                    <asp:PlaceHolder ID="LoggedInInfo" runat="server" Visible="false">
+                        <span class="navbar-text text-white ml-auto">Logged in as:
+                            <asp:Label ID="LoggedInUserLabel" runat="server" ForeColor="White"></asp:Label>
+                            <a href="Logout.aspx" class="btn btn-danger btn-sm ml-2">Logout</a>
+                        </span>
+                    </asp:PlaceHolder>
                 </div>
             </div>
         </nav>
