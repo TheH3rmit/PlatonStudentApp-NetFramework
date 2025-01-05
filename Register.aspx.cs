@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
 using System.Data.SqlClient;
-using System.Linq;
-using System.Web;
+using System.Security.Cryptography;
+using System.Text;
 using System.Web.UI;
-using System.Web.UI.WebControls;
 
 namespace PlatonStudentApp
 {
@@ -20,48 +18,42 @@ namespace PlatonStudentApp
         {
             string connectionString = ConfigurationManager.ConnectionStrings["ConnectionString"].ConnectionString;
 
-            // Check if the username already exists
-            if (IsUsernameTaken(UsernameTextBox.Text, connectionString))
+            // Check if the username is already taken
+            if (IsUsernameTaken(UsernameTextBox.Text.Trim(), connectionString))
             {
                 ErrorMessage.Text = "Username is already taken. Please choose a different username.";
                 return;
             }
 
-            // Register the new user
+            // Use plain text password (no hashing)
+            string plainPassword = PasswordTextBox.Text.Trim();
+
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
-                string userQuery = "INSERT INTO Users (Username, Password, Role, Email) " +
-                                   "VALUES (@Username, @Password, 'Student', @Email); SELECT SCOPE_IDENTITY();";
-                SqlCommand userCmd = new SqlCommand(userQuery, conn);
-                userCmd.Parameters.AddWithValue("@Username", UsernameTextBox.Text);
-                userCmd.Parameters.AddWithValue("@Password", PasswordTextBox.Text);
-                userCmd.Parameters.AddWithValue("@Email", EmailTextBox.Text);
+                string query = @"INSERT INTO Users 
+                        (Username, Password, Role, Email, FirstName, LastName, Address, PhoneNumber, CreatedDate) 
+                        VALUES 
+                        (@Username, @Password, 'Student', @Email, @FirstName, @LastName, @Address, @PhoneNumber, GETDATE())";
+
+                SqlCommand cmd = new SqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@Username", UsernameTextBox.Text.Trim());
+                cmd.Parameters.AddWithValue("@Password", plainPassword); // Save plain text password
+                cmd.Parameters.AddWithValue("@Email", EmailTextBox.Text.Trim());
+                cmd.Parameters.AddWithValue("@FirstName", FirstNameTextBox.Text.Trim());
+                cmd.Parameters.AddWithValue("@LastName", LastNameTextBox.Text.Trim());
+                cmd.Parameters.AddWithValue("@Address", AddressTextBox.Text.Trim());
+                cmd.Parameters.AddWithValue("@PhoneNumber", PhoneNumberTextBox.Text.Trim());
 
                 conn.Open();
-
-                // Insert into Users table and get the UserID
-                int userId = Convert.ToInt32(userCmd.ExecuteScalar());
-
-                // Insert into Students table
-                string studentQuery = "INSERT INTO Students (UserID, FirstName, LastName, DateOfBirth, Gender, Address, PhoneNumber) " +
-                                      "VALUES (@UserID, @FirstName, @LastName, @DateOfBirth, @Gender, @Address, @PhoneNumber)";
-                SqlCommand studentCmd = new SqlCommand(studentQuery, conn);
-                studentCmd.Parameters.AddWithValue("@UserID", userId);
-                studentCmd.Parameters.AddWithValue("@FirstName", FirstNameTextBox.Text);
-                studentCmd.Parameters.AddWithValue("@LastName", LastNameTextBox.Text);
-                studentCmd.Parameters.AddWithValue("@DateOfBirth", string.IsNullOrEmpty(DateOfBirthTextBox.Text) ? DBNull.Value : (object)DateOfBirthTextBox.Text);
-                studentCmd.Parameters.AddWithValue("@Gender", GenderDropDown.SelectedValue);
-                studentCmd.Parameters.AddWithValue("@Address", AddressTextBox.Text);
-                studentCmd.Parameters.AddWithValue("@PhoneNumber", PhoneNumberTextBox.Text);
-
-                studentCmd.ExecuteNonQuery();
+                cmd.ExecuteNonQuery();
             }
 
-            // Clear the form and display success message
+            // Clear the form and show a success message
             ClearForm();
             ErrorMessage.ForeColor = System.Drawing.Color.Green;
             ErrorMessage.Text = "Registration successful!";
         }
+
 
         private bool IsUsernameTaken(string username, string connectionString)
         {
@@ -82,13 +74,21 @@ namespace PlatonStudentApp
         {
             FirstNameTextBox.Text = string.Empty;
             LastNameTextBox.Text = string.Empty;
-            DateOfBirthTextBox.Text = string.Empty;
-            GenderDropDown.SelectedIndex = 0;
             AddressTextBox.Text = string.Empty;
             PhoneNumberTextBox.Text = string.Empty;
             UsernameTextBox.Text = string.Empty;
             PasswordTextBox.Text = string.Empty;
             EmailTextBox.Text = string.Empty;
+        }
+
+        private string HashPassword(string password)
+        {
+            using (SHA256 sha256 = SHA256.Create())
+            {
+                byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+                byte[] hashedBytes = sha256.ComputeHash(passwordBytes);
+                return Convert.ToBase64String(hashedBytes);
+            }
         }
     }
 }

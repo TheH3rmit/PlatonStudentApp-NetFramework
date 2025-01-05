@@ -18,10 +18,12 @@
             <asp:BoundField DataField="Grade" HeaderText="Grade" />
             <asp:TemplateField HeaderText="Update Grade">
                 <ItemTemplate>
-                    <asp:TextBox ID="GradeTextBox" runat="server" Text='<%# Eval("Grade") %>' />
-                    <asp:Button ID="UpdateGradeButton" runat="server" Text="Update" CommandName="UpdateGrade" CommandArgument='<%# Eval("StudentID") + "," + Eval("CourseID") %>' />
+                    <asp:TextBox ID="GradeTextBox" runat="server" Text='<%# Eval("Grade") %>' CssClass="form-control" />
+                    <asp:Button ID="UpdateGradeButton" runat="server" Text="Update" CommandName="UpdateGrade" CommandArgument='<%# Eval("StudentID") + "," + Eval("CourseID") %>' CssClass="btn btn-primary btn-sm mt-1" />
                 </ItemTemplate>
             </asp:TemplateField>
         </Columns>
     </asp:GridView>
+
+    <asp:Label ID="MessageLabel" runat="server" ForeColor="Green" />
 </asp:Content>

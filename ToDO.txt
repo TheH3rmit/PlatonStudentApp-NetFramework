@@ -1,10 +1,4 @@
-﻿Update Database 
-	Changing the User
-	Changing the Teacher
-	Changing the Admin
-	Changing the Student
-
-Rewok the admin sites
+﻿Rewok the admin sites
 	Managing courses and who is assigned to them
 	Managing all users/ all students/ all admins/ all teachers 
 
@@ -15,8 +9,20 @@ Students
 	Enroling into the courses 
 	Able to view grades
 
+Password reset
+
 Responsive?
 Make dataacess layer to seprate 
 Making classes/lists of students in the course?
 
 Search and filter funcionality for all users for certain things??
+
+
+
+
+Role		Username	Password			Hashed Password
+Admin		admin1		admin_password		d033e22ae348aeb5660fc2140aec35850c4da997
+Student 1	student1	student_password1	5e884898da28047151d0e56f8dc6292773603d0d
+Student 2	student2	student_password2	7c6a180b36896a0a8c02787eeafb0e4c
+Teacher 1	teacher1	teacher_password1	2bb80d537b1da3e38bd30361aa855686bde0baef
+Teacher 2	teacher2	teacher_password2	5994471abb01112afcc18159f6cc74b4f511b998

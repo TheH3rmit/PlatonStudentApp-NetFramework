@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
-using System.Linq;
-using System.Web;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
@@ -18,15 +15,15 @@ namespace PlatonStudentApp
         {
             connectionString = ConfigurationManager.ConnectionStrings["ConnectionString"].ConnectionString;
 
+            // Ensure only teachers can access this page
             if (Session["Role"] == null || Session["Role"].ToString() != "Teacher")
             {
-                // Redirect to unauthorized page if not a teacher
                 Response.Redirect("Unauthorized.aspx");
             }
 
             if (!IsPostBack)
             {
-                LoadCourses(); // Load courses for the teacher on the first page load
+                LoadCourses(); // Load the teacher's courses on the first page load
             }
         }
 
@@ -36,9 +33,10 @@ namespace PlatonStudentApp
 
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
-                string query = "SELECT c.CourseID, c.CourseName FROM Courses c " +
-                               "INNER JOIN CourseTeachers ct ON c.CourseID = ct.CourseID " +
-                               "WHERE ct.TeacherID = @TeacherID";
+                string query = @"
+                    SELECT CourseID, CourseName 
+                    FROM Courses 
+                    WHERE TeacherID = @TeacherID";
 
                 SqlCommand cmd = new SqlCommand(query, conn);
                 cmd.Parameters.AddWithValue("@TeacherID", teacherId);
@@ -52,7 +50,7 @@ namespace PlatonStudentApp
                 CourseDropDown.DataBind();
 
                 // Add a default "Select a Course" option
-                CourseDropDown.Items.Insert(0, new System.Web.UI.WebControls.ListItem("-- Select a Course --", "0"));
+                CourseDropDown.Items.Insert(0, new ListItem("-- Select a Course --", "0"));
             }
         }
 
@@ -62,12 +60,13 @@ namespace PlatonStudentApp
 
             if (courseId > 0)
             {
-                LoadStudents(courseId);
+                LoadStudents(courseId); // Load students for the selected course
             }
             else
             {
                 StudentsGridView.DataSource = null;
                 StudentsGridView.DataBind();
+                MessageLabel.Text = ""; // Clear the message label
             }
         }
 
@@ -77,15 +76,15 @@ namespace PlatonStudentApp
             {
                 string query = @"
                     SELECT 
-                        s.StudentID,
-                        s.FirstName,
-                        s.LastName,
+                        e.StudentID,
+                        u.FirstName,
+                        u.LastName,
                         e.Grade,
                         e.CourseID
                     FROM 
                         Enrollments e
                     INNER JOIN 
-                        Students s ON e.StudentID = s.StudentID
+                        Users u ON e.StudentID = u.UserID
                     WHERE 
                         e.CourseID = @CourseID";
 
@@ -113,13 +112,28 @@ namespace PlatonStudentApp
 
                 GridViewRow row = (GridViewRow)((Control)e.CommandSource).NamingContainer;
                 TextBox gradeTextBox = (TextBox)row.FindControl("GradeTextBox");
-                string grade = gradeTextBox.Text;
+                string grade = gradeTextBox.Text.Trim();
+
+                // Validate the grade
+                if (string.IsNullOrEmpty(grade))
+                {
+                    MessageLabel.ForeColor = System.Drawing.Color.Red;
+                    MessageLabel.Text = "Grade cannot be empty.";
+                    return;
+                }
+
+                if (!decimal.TryParse(grade, out decimal parsedGrade) || parsedGrade < 0 || parsedGrade > 100)
+                {
+                    MessageLabel.ForeColor = System.Drawing.Color.Red;
+                    MessageLabel.Text = "Grade must be a number between 0 and 100.";
+                    return;
+                }
 
                 using (SqlConnection conn = new SqlConnection(connectionString))
                 {
                     string query = "UPDATE Enrollments SET Grade = @Grade WHERE StudentID = @StudentID AND CourseID = @CourseID";
                     SqlCommand cmd = new SqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@Grade", grade);
+                    cmd.Parameters.AddWithValue("@Grade", parsedGrade);
                     cmd.Parameters.AddWithValue("@StudentID", studentId);
                     cmd.Parameters.AddWithValue("@CourseID", courseId);
 
@@ -127,7 +141,8 @@ namespace PlatonStudentApp
                     cmd.ExecuteNonQuery();
                 }
 
-                Response.Write("<script>alert('Grade updated successfully');</script>");
+                MessageLabel.ForeColor = System.Drawing.Color.Green;
+                MessageLabel.Text = "Grade updated successfully.";
 
                 // Refresh the grid to reflect the updated grade
                 LoadStudents(courseId);

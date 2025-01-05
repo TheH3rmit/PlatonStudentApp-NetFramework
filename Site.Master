@@ -18,25 +18,23 @@
                 </button>
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav">
+                        <!-- Common Links -->
                         <li class="nav-item"><a class="nav-link" runat="server" href="~/Default.aspx">Home</a></li>
                         <li class="nav-item"><a class="nav-link" runat="server" href="~/About">About</a></li>
                         <li class="nav-item"><a class="nav-link" runat="server" href="~/Contact">Contact</a></li>
 
                         <!-- Admin Links -->
-                        <asp:PlaceHolder ID="AdminLinks" runat="server">
+                        <asp:PlaceHolder ID="AdminLinks" runat="server" Visible="false">
                             <li class="nav-item">
                                 <a class="nav-link" runat="server" href="~/AdminDashboard.aspx">Admin Dashboard</a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link" runat="server" href="~/Course.aspx">Manage Courses</a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link" runat="server" href="~/ManageUsers.aspx">Manage Users</a>
-                            </li>
                         </asp:PlaceHolder>
 
                         <!-- Student Links -->
-                        <asp:PlaceHolder ID="StudentLinks" runat="server">
+                        <asp:PlaceHolder ID="StudentLinks" runat="server" Visible="false">
                             <li class="nav-item">
                                 <a class="nav-link" runat="server" href="~/StudentDashboard.aspx">Student Dashboard</a>
                             </li>
@@ -44,12 +42,19 @@
                                 <a class="nav-link" runat="server" href="~/Grades.aspx">My Grades</a>
                             </li>
                         </asp:PlaceHolder>
+
+                        <!-- Teacher Links -->
+                        <asp:PlaceHolder ID="TeacherLinks" runat="server" Visible="false">
+                            <li class="nav-item">
+                                <a class="nav-link" runat="server" href="~/TeacherDashboard.aspx">Teacher Dashboard</a>
+                            </li>
+                        </asp:PlaceHolder>
                     </ul>
 
                     <!-- Current User Information -->
                     <asp:PlaceHolder ID="LoggedInInfo" runat="server" Visible="false">
-                        <span class="navbar-text text-white ml-auto">Logged in as:
-                            <asp:Label ID="LoggedInUserLabel" runat="server" ForeColor="White"></asp:Label>
+                        <span class="navbar-text text-white ml-auto">
+                            Logged in as: <asp:Label ID="LoggedInUserLabel" runat="server" ForeColor="White"></asp:Label>
                             <a href="Logout.aspx" class="btn btn-danger btn-sm ml-2">Logout</a>
                         </span>
                     </asp:PlaceHolder>

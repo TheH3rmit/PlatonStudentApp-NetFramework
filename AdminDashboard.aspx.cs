@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Data;
 using System.Data.SqlClient;
-using System.Configuration; 
+using System.Configuration;
+using System.Web.UI.WebControls;
 
 namespace PlatonStudentApp
 {
-    public partial class WebForm1 : System.Web.UI.Page
+    public partial class AdminDashboard : System.Web.UI.Page
     {
         private string connectionString;
 
@@ -13,56 +14,139 @@ namespace PlatonStudentApp
         {
             connectionString = ConfigurationManager.ConnectionStrings["ConnectionString"].ConnectionString;
 
-            if (!IsPostBack)
-            {
-                LoadStudents();
-            }
+            // Restrict access to Admins only
             if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
             {
-                Response.Redirect("Unauthorized.aspx"); // Redirect unauthorized users
+                Response.Redirect("Unauthorized.aspx");
+            }
+
+            if (!IsPostBack)
+            {
+                LoadUsers(); // Load users into the GridView
             }
         }
 
-        private void LoadStudents()
+        private void LoadUsers()
         {
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
-                string query = "SELECT StudentID, FirstName, LastName, PhoneNumber FROM Students";
-                SqlCommand cmd = new SqlCommand(query, conn);
-
-                SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                DataTable studentsTable = new DataTable();
-
+                string query = "SELECT UserID, Username, Email, Role, FirstName, LastName, PhoneNumber, Address, AdditionalData FROM Users";
+                SqlDataAdapter adapter = new SqlDataAdapter(query, conn);
+                DataTable usersTable = new DataTable();
                 conn.Open();
-                adapter.Fill(studentsTable);
+                adapter.Fill(usersTable);
 
-                StudentsGridView.DataSource = studentsTable;
-                StudentsGridView.DataBind();
+                UsersGridView.DataSource = usersTable;
+                UsersGridView.DataBind();
             }
         }
 
-        protected void AddStudentButton_Click(object sender, EventArgs e)
+        protected void AddUserButton_Click(object sender, EventArgs e)
         {
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
-                string query = "INSERT INTO Students (FirstName, LastName, PhoneNumber) " +
-                               "VALUES (@FirstName, @LastName, @PhoneNumber)";
+                string query = @"INSERT INTO Users 
+                                (Username, Password, Email, Role, FirstName, LastName, PhoneNumber, Address, AdditionalData, CreatedDate) 
+                                VALUES 
+                                (@Username, @Password, @Email, @Role, @FirstName, @LastName, @PhoneNumber, @Address, @AdditionalData, GETDATE())";
                 SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@FirstName", FirstNameTextBox.Text);
-                cmd.Parameters.AddWithValue("@LastName", LastNameTextBox.Text);
-                cmd.Parameters.AddWithValue("@PhoneNumber", PhoneNumberTextBox.Text);
+                cmd.Parameters.AddWithValue("@Username", UsernameTextBox.Text.Trim());
+                cmd.Parameters.AddWithValue("@Password", PasswordTextBox.Text.Trim()); // Note: Password should be hashed in production
+                cmd.Parameters.AddWithValue("@Email", EmailTextBox.Text.Trim());
+                cmd.Parameters.AddWithValue("@Role", RoleDropDown.SelectedValue);
+                cmd.Parameters.AddWithValue("@FirstName", FirstNameTextBox.Text.Trim());
+                cmd.Parameters.AddWithValue("@LastName", LastNameTextBox.Text.Trim());
+                cmd.Parameters.AddWithValue("@PhoneNumber", PhoneNumberTextBox.Text.Trim());
+                cmd.Parameters.AddWithValue("@Address", AddressTextBox.Text.Trim());
+                cmd.Parameters.AddWithValue("@AdditionalData", AdditionalDataTextBox.Text.Trim());
 
                 conn.Open();
                 cmd.ExecuteNonQuery();
             }
 
-            // Clear the input fields
+            ResultLabel.Text = "User added successfully!";
+            ClearForm();
+            LoadUsers(); // Refresh the GridView
+        }
+
+        private void ClearForm()
+        {
+            UsernameTextBox.Text = string.Empty;
+            PasswordTextBox.Text = string.Empty;
+            EmailTextBox.Text = string.Empty;
+            RoleDropDown.SelectedIndex = 0;
             FirstNameTextBox.Text = string.Empty;
             LastNameTextBox.Text = string.Empty;
             PhoneNumberTextBox.Text = string.Empty;
+            AddressTextBox.Text = string.Empty;
+            AdditionalDataTextBox.Text = string.Empty;
+        }
 
-            // Reload the GridView
-            LoadStudents();
+        protected void UsersGridView_RowEditing(object sender, GridViewEditEventArgs e)
+        {
+            UsersGridView.EditIndex = e.NewEditIndex;
+            LoadUsers(); // Refresh GridView to enter edit mode
+        }
+
+        protected void UsersGridView_RowUpdating(object sender, GridViewUpdateEventArgs e)
+        {
+            GridViewRow row = UsersGridView.Rows[e.RowIndex];
+            int userId = Convert.ToInt32(UsersGridView.DataKeys[e.RowIndex].Value);
+            string username = ((TextBox)row.Cells[1].Controls[0]).Text;
+            string email = ((TextBox)row.Cells[2].Controls[0]).Text;
+            string role = ((TextBox)row.Cells[3].Controls[0]).Text;
+            string firstName = ((TextBox)row.Cells[4].Controls[0]).Text;
+            string lastName = ((TextBox)row.Cells[5].Controls[0]).Text;
+            string phoneNumber = ((TextBox)row.Cells[6].Controls[0]).Text;
+            string address = ((TextBox)row.Cells[7].Controls[0]).Text;
+            string additionalData = ((TextBox)row.Cells[8].Controls[0]).Text;
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                string query = @"UPDATE Users 
+                                SET Username = @Username, Email = @Email, Role = @Role, FirstName = @FirstName, LastName = @LastName, 
+                                    PhoneNumber = @PhoneNumber, Address = @Address, AdditionalData = @AdditionalData
+                                WHERE UserID = @UserID";
+                SqlCommand cmd = new SqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@UserID", userId);
+                cmd.Parameters.AddWithValue("@Username", username);
+                cmd.Parameters.AddWithValue("@Email", email);
+                cmd.Parameters.AddWithValue("@Role", role);
+                cmd.Parameters.AddWithValue("@FirstName", firstName);
+                cmd.Parameters.AddWithValue("@LastName", lastName);
+                cmd.Parameters.AddWithValue("@PhoneNumber", phoneNumber);
+                cmd.Parameters.AddWithValue("@Address", address);
+                cmd.Parameters.AddWithValue("@AdditionalData", additionalData);
+
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
+
+            UsersGridView.EditIndex = -1; // Exit edit mode
+            LoadUsers(); // Refresh the GridView
+        }
+
+        protected void UsersGridView_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
+        {
+            UsersGridView.EditIndex = -1;
+            LoadUsers(); // Refresh the GridView to cancel edit mode
+        }
+
+        protected void UsersGridView_RowDeleting(object sender, GridViewDeleteEventArgs e)
+        {
+            int userId = Convert.ToInt32(UsersGridView.DataKeys[e.RowIndex].Value);
+
+            using (SqlConnection conn = new SqlConnection(connectionString))
+            {
+                string query = "DELETE FROM Users WHERE UserID = @UserID";
+                SqlCommand cmd = new SqlCommand(query, conn);
+                cmd.Parameters.AddWithValue("@UserID", userId);
+
+                conn.Open();
+                cmd.ExecuteNonQuery();
+            }
+
+            LoadUsers(); // Refresh the GridView
         }
     }
 }

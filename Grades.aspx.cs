@@ -1,10 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Configuration;
-using System.Data.SqlClient;
 using System.Data;
-using System.Linq;
-using System.Web;
+using System.Data.SqlClient;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
@@ -18,9 +15,9 @@ namespace PlatonStudentApp
         {
             connectionString = ConfigurationManager.ConnectionStrings["ConnectionString"].ConnectionString;
 
-            if (Session["StudentID"] == null)
+            // Redirect unauthorized users
+            if (Session["Role"] == null)
             {
-                // If no student is logged in, redirect to login
                 Response.Redirect("Login.aspx");
             }
 
@@ -32,25 +29,57 @@ namespace PlatonStudentApp
 
         private void LoadGrades()
         {
-            int studentId = Convert.ToInt32(Session["StudentID"]); // Get the logged-in student's ID
-
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
-                // Query to get grades and course information for the logged-in student
-                string query = @"
-                    SELECT 
-                        c.CourseName,
-                        e.Grade,
-                        e.EnrollmentDate
-                    FROM 
-                        Enrollments e
-                    INNER JOIN 
-                        Courses c ON e.CourseID = c.CourseID
-                    WHERE 
-                        e.StudentID = @StudentID";
+                string query = "";
+
+                // Check user role and modify the query accordingly
+                if (Session["Role"].ToString() == "Student")
+                {
+                    // Query for students to view their own grades
+                    query = @"
+                        SELECT 
+                            e.EnrollmentID,
+                            c.CourseName,
+                            e.Grade,
+                            e.EnrollmentDate
+                        FROM 
+                            Enrollments e
+                        INNER JOIN 
+                            Courses c ON e.CourseID = c.CourseID
+                        WHERE 
+                            e.StudentID = @StudentID";
+                }
+                else if (Session["Role"].ToString() == "Teacher" || Session["Role"].ToString() == "Admin")
+                {
+                    // Query for teachers or admins to view all grades for courses they manage
+                    query = @"
+                        SELECT 
+                            e.EnrollmentID,
+                            c.CourseName,
+                            e.Grade,
+                            e.EnrollmentDate
+                        FROM 
+                            Enrollments e
+                        INNER JOIN 
+                            Courses c ON e.CourseID = c.CourseID
+                        INNER JOIN 
+                            Users u ON c.TeacherID = u.UserID
+                        WHERE 
+                            (@Role = 'Admin' OR c.TeacherID = @UserID)";
+                }
 
                 SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@StudentID", studentId);
+
+                if (Session["Role"].ToString() == "Student")
+                {
+                    cmd.Parameters.AddWithValue("@StudentID", Convert.ToInt32(Session["StudentID"]));
+                }
+                else if (Session["Role"].ToString() == "Teacher" || Session["Role"].ToString() == "Admin")
+                {
+                    cmd.Parameters.AddWithValue("@Role", Session["Role"].ToString());
+                    cmd.Parameters.AddWithValue("@UserID", Convert.ToInt32(Session["UserID"]));
+                }
 
                 SqlDataAdapter adapter = new SqlDataAdapter(cmd);
                 DataTable gradesTable = new DataTable();
@@ -60,6 +89,42 @@ namespace PlatonStudentApp
 
                 GradesGridView.DataSource = gradesTable; // Bind data to the GridView
                 GradesGridView.DataBind(); // Refresh the GridView
+            }
+        }
+
+        protected void GradesGridView_RowCommand(object sender, GridViewCommandEventArgs e)
+        {
+            if (e.CommandName == "UpdateGrade")
+            {
+                if (Session["Role"].ToString() != "Teacher" && Session["Role"].ToString() != "Admin")
+                {
+                    // Only teachers and admins can update grades
+                    Response.Redirect("Unauthorized.aspx");
+                }
+
+                // Get the EnrollmentID and new grade value
+                int enrollmentId = Convert.ToInt32(e.CommandArgument);
+                GridViewRow row = (GridViewRow)((Button)e.CommandSource).NamingContainer;
+                string newGrade = ((TextBox)row.FindControl("GradeTextBox")).Text;
+
+                // Update the grade in the database
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    string updateQuery = @"
+                        UPDATE Enrollments
+                        SET Grade = @Grade
+                        WHERE EnrollmentID = @EnrollmentID";
+
+                    SqlCommand cmd = new SqlCommand(updateQuery, conn);
+                    cmd.Parameters.AddWithValue("@Grade", newGrade);
+                    cmd.Parameters.AddWithValue("@EnrollmentID", enrollmentId);
+
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                }
+
+                // Reload the GridView
+                LoadGrades();
             }
         }
     }

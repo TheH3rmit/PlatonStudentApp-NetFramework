@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
 using System.Web.UI;
-using System.Web.UI.WebControls;
 
 namespace PlatonStudentApp
 {
@@ -14,21 +10,22 @@ namespace PlatonStudentApp
             // Check if the user is logged in
             if (Session["Role"] != null)
             {
-                // Set the "Logged in as" information
-                LoggedInInfo.Visible = true; // Show the LoggedInInfo PlaceHolder
+                // Display "Logged in as" information
+                LoggedInInfo.Visible = true;
                 LoggedInUserLabel.Text = Session["Username"] != null
-                    ? Session["Username"].ToString()
+                    ? Session["Username"].ToString() // Explicitly convert Session["Username"] to string
                     : "Unknown User"; // Fallback for missing username
             }
             else
             {
-                // Hide the "Logged in as" information for guests
+                // Hide "Logged in as" information for guests
                 LoggedInInfo.Visible = false;
             }
 
-            // Role-based visibility for menu links
+            // Role-based navigation visibility
             AdminLinks.Visible = (Session["Role"] != null && Session["Role"].ToString() == "Admin");
             StudentLinks.Visible = (Session["Role"] != null && Session["Role"].ToString() == "Student");
+            TeacherLinks.Visible = (Session["Role"] != null && Session["Role"].ToString() == "Teacher");
         }
     }
 }

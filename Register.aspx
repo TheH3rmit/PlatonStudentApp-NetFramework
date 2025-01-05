@@ -9,15 +9,6 @@
         <br />
         <asp:TextBox ID="LastNameTextBox" runat="server" CssClass="form-control" Placeholder="Last Name"></asp:TextBox>
         <br />
-        <asp:TextBox ID="DateOfBirthTextBox" runat="server" CssClass="form-control" Placeholder="Date of Birth (YYYY-MM-DD)"></asp:TextBox>
-        <br />
-        <asp:DropDownList ID="GenderDropDown" runat="server" CssClass="form-control">
-            <asp:ListItem Text="Select Gender" Value="" />
-            <asp:ListItem Text="Male" Value="Male" />
-            <asp:ListItem Text="Female" Value="Female" />
-            <asp:ListItem Text="Other" Value="Other" />
-        </asp:DropDownList>
-        <br />
         <asp:TextBox ID="AddressTextBox" runat="server" CssClass="form-control" Placeholder="Address"></asp:TextBox>
         <br />
         <asp:TextBox ID="PhoneNumberTextBox" runat="server" CssClass="form-control" Placeholder="Phone Number"></asp:TextBox>
