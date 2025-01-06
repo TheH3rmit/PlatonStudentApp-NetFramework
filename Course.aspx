@@ -4,33 +4,31 @@
     <h1>Manage Courses</h1>
 
     <!-- GridView to Display and Edit Courses -->
-<asp:GridView ID="CoursesGridView" runat="server" AutoGenerateColumns="False" 
-    DataKeyNames="CourseID,TeacherID" 
-    OnRowEditing="CoursesGridView_RowEditing" 
-    OnRowCancelingEdit="CoursesGridView_RowCancelingEdit" 
-    OnRowUpdating="CoursesGridView_RowUpdating" 
-    OnRowDeleting="CoursesGridView_RowDeleting">
-    <Columns>
-        <asp:BoundField DataField="CourseID" HeaderText="Course ID" ReadOnly="True" />
-        <asp:BoundField DataField="CourseName" HeaderText="Course Name" />
-        <asp:BoundField DataField="Description" HeaderText="Description" />
-        <asp:BoundField DataField="Credits" HeaderText="Credits" />
-        <asp:BoundField DataField="StartDate" HeaderText="Start Date" DataFormatString="{0:yyyy-MM-dd}" />
-        <asp:BoundField DataField="EndDate" HeaderText="End Date" DataFormatString="{0:yyyy-MM-dd}" />
-        <asp:TemplateField HeaderText="Teacher">
-            <ItemTemplate>
-                <asp:Label ID="TeacherLabel" runat="server" Text='<%# Eval("TeacherName") %>'></asp:Label>
-            </ItemTemplate>
-            <EditItemTemplate>
-                <asp:DropDownList ID="TeacherDropDown" runat="server"></asp:DropDownList>
-            </EditItemTemplate>
-        </asp:TemplateField>
-        <asp:CommandField ShowEditButton="True" />
-        <asp:CommandField ShowDeleteButton="True" />
-    </Columns>
-</asp:GridView>
-
-
+    <asp:GridView ID="CoursesGridView" runat="server" AutoGenerateColumns="False" 
+        DataKeyNames="CourseID,TeacherID" 
+        OnRowEditing="CoursesGridView_RowEditing" 
+        OnRowCancelingEdit="CoursesGridView_RowCancelingEdit" 
+        OnRowUpdating="CoursesGridView_RowUpdating" 
+        OnRowDeleting="CoursesGridView_RowDeleting">
+        <Columns>
+            <asp:BoundField DataField="CourseID" HeaderText="Course ID" ReadOnly="True" />
+            <asp:BoundField DataField="CourseName" HeaderText="Course Name" />
+            <asp:BoundField DataField="Description" HeaderText="Description" />
+            <asp:BoundField DataField="Credits" HeaderText="Credits" />
+            <asp:BoundField DataField="StartDate" HeaderText="Start Date" DataFormatString="{0:yyyy-MM-dd}" />
+            <asp:BoundField DataField="EndDate" HeaderText="End Date" DataFormatString="{0:yyyy-MM-dd}" />
+            <asp:TemplateField HeaderText="Teacher">
+                <ItemTemplate>
+                    <asp:Label ID="TeacherLabel" runat="server" Text='<%# Eval("TeacherName") %>'></asp:Label>
+                </ItemTemplate>
+                <EditItemTemplate>
+                    <asp:DropDownList ID="TeacherDropDown" runat="server"></asp:DropDownList>
+                </EditItemTemplate>
+            </asp:TemplateField>
+            <asp:CommandField ShowEditButton="True" />
+            <asp:CommandField ShowDeleteButton="True" />
+        </Columns>
+    </asp:GridView>
 
     <br />
 

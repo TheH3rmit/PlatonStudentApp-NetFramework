@@ -11,49 +11,78 @@ namespace PlatonStudentApp
     {
         protected void Page_Load(object sender, EventArgs e)
         {
+            // Display message from Session if it exists
+            if (Session["Message"] != null)
+            {
+                if (Session["MessageType"] != null && Session["MessageType"].ToString() == "Success")
+                {
+                    ErrorMessage.ForeColor = System.Drawing.Color.Green;
+                }
+                else
+                {
+                    ErrorMessage.ForeColor = System.Drawing.Color.Red;
+                }
 
+                ErrorMessage.Text = Session["Message"].ToString();
+                Session.Remove("Message");
+                Session.Remove("MessageType");
+            }
         }
 
         protected void RegisterButton_Click(object sender, EventArgs e)
         {
             string connectionString = ConfigurationManager.ConnectionStrings["ConnectionString"].ConnectionString;
 
-            // Check if the username is already taken
-            if (IsUsernameTaken(UsernameTextBox.Text.Trim(), connectionString))
+            try
             {
-                ErrorMessage.Text = "Username is already taken. Please choose a different username.";
-                return;
-            }
+                // Check if the username is already taken
+                if (IsUsernameTaken(UsernameTextBox.Text.Trim(), connectionString))
+                {
+                    Session["Message"] = "Username is already taken. Please choose a different username.";
+                    Session["MessageType"] = "Error";
+                    Response.Redirect(Request.Url.AbsoluteUri);
+                    return;
+                }
 
-            // Use plain text password (no hashing)
-            string plainPassword = PasswordTextBox.Text.Trim();
+                // Use plain text password (no hashing in this case for simplicity, but recommend hashing)
+                string plainPassword = PasswordTextBox.Text.Trim();
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                string query = @"INSERT INTO Users 
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    string query = @"INSERT INTO Users 
                         (Username, Password, Role, Email, FirstName, LastName, Address, PhoneNumber, CreatedDate) 
                         VALUES 
                         (@Username, @Password, 'Student', @Email, @FirstName, @LastName, @Address, @PhoneNumber, GETDATE())";
 
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@Username", UsernameTextBox.Text.Trim());
-                cmd.Parameters.AddWithValue("@Password", plainPassword); // Save plain text password
-                cmd.Parameters.AddWithValue("@Email", EmailTextBox.Text.Trim());
-                cmd.Parameters.AddWithValue("@FirstName", FirstNameTextBox.Text.Trim());
-                cmd.Parameters.AddWithValue("@LastName", LastNameTextBox.Text.Trim());
-                cmd.Parameters.AddWithValue("@Address", AddressTextBox.Text.Trim());
-                cmd.Parameters.AddWithValue("@PhoneNumber", PhoneNumberTextBox.Text.Trim());
+                    SqlCommand cmd = new SqlCommand(query, conn);
+                    cmd.Parameters.AddWithValue("@Username", UsernameTextBox.Text.Trim());
+                    cmd.Parameters.AddWithValue("@Password", plainPassword); // Save plain text password
+                    cmd.Parameters.AddWithValue("@Email", EmailTextBox.Text.Trim());
+                    cmd.Parameters.AddWithValue("@FirstName", FirstNameTextBox.Text.Trim());
+                    cmd.Parameters.AddWithValue("@LastName", LastNameTextBox.Text.Trim());
+                    cmd.Parameters.AddWithValue("@Address", AddressTextBox.Text.Trim());
+                    cmd.Parameters.AddWithValue("@PhoneNumber", PhoneNumberTextBox.Text.Trim());
 
-                conn.Open();
-                cmd.ExecuteNonQuery();
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
+                }
+
+                // Clear the form and show a success message
+                ClearForm();
+                Session["Message"] = "Registration successful!";
+                Session["MessageType"] = "Success";
+            }
+            catch (Exception ex)
+            {
+                // Log the exception and set an error message
+                System.Diagnostics.Debug.WriteLine("Error: " + ex.Message);
+                Session["Message"] = "An error occurred during registration. Please try again.";
+                Session["MessageType"] = "Error";
             }
 
-            // Clear the form and show a success message
-            ClearForm();
-            ErrorMessage.ForeColor = System.Drawing.Color.Green;
-            ErrorMessage.Text = "Registration successful!";
+            // Redirect to avoid form resubmission
+            Response.Redirect(Request.Url.AbsoluteUri);
         }
-
 
         private bool IsUsernameTaken(string username, string connectionString)
         {

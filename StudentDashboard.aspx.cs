@@ -32,8 +32,26 @@ namespace PlatonStudentApp
             {
                 LoadAvailableCourses();
                 LoadEnrolledCoursesWithGrades();
+
+                // Display message from Session if it exists
+                if (Session["Message"] != null)
+                {
+                    if (Session["MessageType"] != null && Session["MessageType"].ToString() == "Success")
+                    {
+                        MessageLabel.ForeColor = System.Drawing.Color.Green;
+                    }
+                    else
+                    {
+                        MessageLabel.ForeColor = System.Drawing.Color.Red;
+                    }
+
+                    MessageLabel.Text = Session["Message"].ToString();
+                    Session.Remove("Message");
+                    Session.Remove("MessageType");
+                }
             }
         }
+
 
         // Load available courses
         private void LoadAvailableCourses()
@@ -141,8 +159,8 @@ namespace PlatonStudentApp
                     if (count > 0)
                     {
                         // Student is already enrolled
-                        MessageLabel.ForeColor = System.Drawing.Color.Red;
-                        MessageLabel.Text = "You are already enrolled in this course.";
+                        Session["Message"] = "You are already enrolled in this course.";
+                        Session["MessageType"] = "Error";
                     }
                     else
                     {
@@ -154,19 +172,19 @@ namespace PlatonStudentApp
 
                         enrollCmd.ExecuteNonQuery();
 
-                        MessageLabel.ForeColor = System.Drawing.Color.Green;
-                        MessageLabel.Text = "Successfully enrolled in the course.";
+                        Session["Message"] = "Successfully enrolled in the course.";
+                        Session["MessageType"] = "Success";
                     }
                 }
 
-                // Reload the data
-                LoadAvailableCourses();
-                LoadEnrolledCoursesWithGrades();
+                // Redirect to the same page to avoid form resubmission
+                Response.Redirect(Request.Url.AbsoluteUri);
             }
             catch (Exception ex)
             {
-                MessageLabel.ForeColor = System.Drawing.Color.Red;
-                MessageLabel.Text = "Error enrolling in course: " + ex.Message;
+                Session["Message"] = "Error enrolling in course: " + ex.Message;
+                Session["MessageType"] = "Error";
+                Response.Redirect(Request.Url.AbsoluteUri);
             }
         }
 
@@ -202,24 +220,24 @@ namespace PlatonStudentApp
 
                     if (rowsAffected > 0)
                     {
-                        MessageLabel.ForeColor = System.Drawing.Color.Green;
-                        MessageLabel.Text = "Successfully unenrolled from the course.";
+                        Session["Message"] = "Successfully unenrolled from the course.";
+                        Session["MessageType"] = "Success";
                     }
                     else
                     {
-                        MessageLabel.ForeColor = System.Drawing.Color.Red;
-                        MessageLabel.Text = "Error: Could not find the enrollment to delete.";
+                        Session["Message"] = "Error: Could not find the enrollment to delete.";
+                        Session["MessageType"] = "Error";
                     }
 
-                    // Reload the data
-                    LoadAvailableCourses();
-                    LoadEnrolledCoursesWithGrades();
+                    // Redirect to the same page to avoid form resubmission
+                    Response.Redirect(Request.Url.AbsoluteUri);
                 }
             }
             catch (Exception ex)
             {
-                MessageLabel.ForeColor = System.Drawing.Color.Red;
-                MessageLabel.Text = "Error unenrolling from course: " + ex.Message;
+                Session["Message"] = "Error unenrolling from course: " + ex.Message;
+                Session["MessageType"] = "Error";
+                Response.Redirect(Request.Url.AbsoluteUri);
             }
         }
 

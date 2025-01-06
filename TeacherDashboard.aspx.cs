@@ -24,6 +24,23 @@ namespace PlatonStudentApp
             if (!IsPostBack)
             {
                 LoadCourses(); // Load the teacher's courses on the first page load
+
+                // Display message from Session if it exists
+                if (Session["Message"] != null)
+                {
+                    if (Session["MessageType"] != null && Session["MessageType"].ToString() == "Success")
+                    {
+                        MessageLabel.ForeColor = System.Drawing.Color.Green;
+                    }
+                    else
+                    {
+                        MessageLabel.ForeColor = System.Drawing.Color.Red;
+                    }
+
+                    MessageLabel.Text = Session["Message"].ToString();
+                    Session.Remove("Message");
+                    Session.Remove("MessageType");
+                }
             }
         }
 
@@ -117,35 +134,45 @@ namespace PlatonStudentApp
                 // Validate the grade
                 if (string.IsNullOrEmpty(grade))
                 {
-                    MessageLabel.ForeColor = System.Drawing.Color.Red;
-                    MessageLabel.Text = "Grade cannot be empty.";
+                    Session["Message"] = "Grade cannot be empty.";
+                    Session["MessageType"] = "Error";
+                    Response.Redirect(Request.Url.AbsoluteUri);
                     return;
                 }
 
                 if (!decimal.TryParse(grade, out decimal parsedGrade) || parsedGrade < 0 || parsedGrade > 100)
                 {
-                    MessageLabel.ForeColor = System.Drawing.Color.Red;
-                    MessageLabel.Text = "Grade must be a number between 0 and 100.";
+                    Session["Message"] = "Grade must be a number between 0 and 100.";
+                    Session["MessageType"] = "Error";
+                    Response.Redirect(Request.Url.AbsoluteUri);
                     return;
                 }
 
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                try
                 {
-                    string query = "UPDATE Enrollments SET Grade = @Grade WHERE StudentID = @StudentID AND CourseID = @CourseID";
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@Grade", parsedGrade);
-                    cmd.Parameters.AddWithValue("@StudentID", studentId);
-                    cmd.Parameters.AddWithValue("@CourseID", courseId);
+                    using (SqlConnection conn = new SqlConnection(connectionString))
+                    {
+                        string query = "UPDATE Enrollments SET Grade = @Grade WHERE StudentID = @StudentID AND CourseID = @CourseID";
+                        SqlCommand cmd = new SqlCommand(query, conn);
+                        cmd.Parameters.AddWithValue("@Grade", parsedGrade);
+                        cmd.Parameters.AddWithValue("@StudentID", studentId);
+                        cmd.Parameters.AddWithValue("@CourseID", courseId);
 
-                    conn.Open();
-                    cmd.ExecuteNonQuery();
+                        conn.Open();
+                        cmd.ExecuteNonQuery();
+                    }
+
+                    Session["Message"] = "Grade updated successfully.";
+                    Session["MessageType"] = "Success";
+                }
+                catch (Exception ex)
+                {
+                    Session["Message"] = "Error updating grade: " + ex.Message;
+                    Session["MessageType"] = "Error";
                 }
 
-                MessageLabel.ForeColor = System.Drawing.Color.Green;
-                MessageLabel.Text = "Grade updated successfully.";
-
-                // Refresh the grid to reflect the updated grade
-                LoadStudents(courseId);
+                // Redirect to the same page to avoid form resubmission
+                Response.Redirect(Request.Url.AbsoluteUri);
             }
         }
     }

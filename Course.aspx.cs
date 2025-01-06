@@ -10,7 +10,6 @@ namespace PlatonStudentApp
     public partial class Course : System.Web.UI.Page
     {
         private string connectionString;
-
         protected void Page_Load(object sender, EventArgs e)
         {
             connectionString = ConfigurationManager.ConnectionStrings["ConnectionString"].ConnectionString;
@@ -25,8 +24,17 @@ namespace PlatonStudentApp
             {
                 LoadCourses();
                 LoadTeachers();
+
+                // Display message from Session if it exists
+                if (Session["Message"] != null)
+                {
+                    MessageLabel.Text = Session["Message"].ToString();
+                    MessageLabel.ForeColor = System.Drawing.Color.Green;
+                    Session.Remove("Message");
+                }
             }
         }
+
 
         private void LoadCourses()
         {
@@ -121,16 +129,19 @@ namespace PlatonStudentApp
 
                 // Add course
                 AddCourse();
+
+                // Set success message in Session and redirect
+                Session["Message"] = "Course added successfully!";
+                Response.Redirect(Request.Url.AbsoluteUri);
             }
             catch (Exception ex)
             {
-                // Log the exception and show a generic error message
                 MessageLabel.ForeColor = System.Drawing.Color.Red;
-                MessageLabel.Text = "An error occurred while adding the course. Please try again.";
-                // Optionally log the exception details to a file or monitoring system
+                MessageLabel.Text = "An error occurred while adding the course.";
                 System.Diagnostics.Debug.WriteLine("Error: " + ex.Message);
             }
         }
+
 
 
         private void AddCourse()
