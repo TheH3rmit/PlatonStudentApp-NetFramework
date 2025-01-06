@@ -80,48 +80,105 @@ namespace PlatonStudentApp
 
         protected void AddCourseButton_Click(object sender, EventArgs e)
         {
-            // Validate fields
-            if (string.IsNullOrEmpty(CourseNameTextBox.Text) ||
-                string.IsNullOrEmpty(CourseDescriptionTextBox.Text) ||
-                string.IsNullOrEmpty(CourseCreditsTextBox.Text) ||
-                string.IsNullOrEmpty(StartDateTextBox.Text) ||
-                string.IsNullOrEmpty(EndDateTextBox.Text) ||
-                TeacherDropDown.SelectedValue == "0")
+            try
             {
-                MessageLabel.ForeColor = System.Drawing.Color.Red;
-                MessageLabel.Text = "All fields are required.";
-                return;
-            }
+                // Validate fields
+                if (string.IsNullOrEmpty(CourseNameTextBox.Text) ||
+                    string.IsNullOrEmpty(CourseDescriptionTextBox.Text) ||
+                    string.IsNullOrEmpty(CourseCreditsTextBox.Text) ||
+                    string.IsNullOrEmpty(StartDateTextBox.Text) ||
+                    string.IsNullOrEmpty(EndDateTextBox.Text) ||
+                    TeacherDropDown.SelectedValue == "0")
+                {
+                    MessageLabel.ForeColor = System.Drawing.Color.Red;
+                    MessageLabel.Text = "All fields are required.";
+                    return;
+                }
 
-            // Add course
-            AddCourse();
+                // Validate numeric fields
+                if (!int.TryParse(CourseCreditsTextBox.Text.Trim(), out int credits) || credits < 1)
+                {
+                    MessageLabel.ForeColor = System.Drawing.Color.Red;
+                    MessageLabel.Text = "Credits must be a valid positive integer.";
+                    return;
+                }
+
+                // Validate date fields
+                if (!DateTime.TryParse(StartDateTextBox.Text.Trim(), out DateTime startDate) ||
+                    !DateTime.TryParse(EndDateTextBox.Text.Trim(), out DateTime endDate))
+                {
+                    MessageLabel.ForeColor = System.Drawing.Color.Red;
+                    MessageLabel.Text = "Start Date and End Date must be valid dates.";
+                    return;
+                }
+
+                if (endDate < startDate)
+                {
+                    MessageLabel.ForeColor = System.Drawing.Color.Red;
+                    MessageLabel.Text = "End Date cannot be earlier than Start Date.";
+                    return;
+                }
+
+                // Add course
+                AddCourse();
+            }
+            catch (Exception ex)
+            {
+                // Log the exception and show a generic error message
+                MessageLabel.ForeColor = System.Drawing.Color.Red;
+                MessageLabel.Text = "An error occurred while adding the course. Please try again.";
+                // Optionally log the exception details to a file or monitoring system
+                System.Diagnostics.Debug.WriteLine("Error: " + ex.Message);
+            }
         }
+
 
         private void AddCourse()
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            try
             {
-                string query = @"
-                INSERT INTO Courses (CourseName, Description, Credits, StartDate, EndDate, TeacherID) 
-                VALUES (@CourseName, @Description, @Credits, @StartDate, @EndDate, @TeacherID)";
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@CourseName", CourseNameTextBox.Text.Trim());
-                cmd.Parameters.AddWithValue("@Description", CourseDescriptionTextBox.Text.Trim());
-                cmd.Parameters.AddWithValue("@Credits", int.Parse(CourseCreditsTextBox.Text.Trim()));
-                cmd.Parameters.AddWithValue("@StartDate", DateTime.Parse(StartDateTextBox.Text.Trim()));
-                cmd.Parameters.AddWithValue("@EndDate", DateTime.Parse(EndDateTextBox.Text.Trim()));
-                cmd.Parameters.AddWithValue("@TeacherID", int.Parse(TeacherDropDown.SelectedValue));
+                using (SqlConnection conn = new SqlConnection(connectionString))
+                {
+                    string query = @"
+            INSERT INTO Courses (CourseName, Description, Credits, StartDate, EndDate, TeacherID) 
+            VALUES (@CourseName, @Description, @Credits, @StartDate, @EndDate, @TeacherID)";
+                    SqlCommand cmd = new SqlCommand(query, conn);
+                    cmd.Parameters.AddWithValue("@CourseName", CourseNameTextBox.Text.Trim());
+                    cmd.Parameters.AddWithValue("@Description", CourseDescriptionTextBox.Text.Trim());
+                    cmd.Parameters.AddWithValue("@Credits", int.Parse(CourseCreditsTextBox.Text.Trim()));
+                    cmd.Parameters.AddWithValue("@StartDate", DateTime.Parse(StartDateTextBox.Text.Trim()));
+                    cmd.Parameters.AddWithValue("@EndDate", DateTime.Parse(EndDateTextBox.Text.Trim()));
+                    cmd.Parameters.AddWithValue("@TeacherID", int.Parse(TeacherDropDown.SelectedValue));
 
-                conn.Open();
-                cmd.ExecuteNonQuery();
+                    conn.Open();
+                    cmd.ExecuteNonQuery();
 
-                MessageLabel.ForeColor = System.Drawing.Color.Green;
-                MessageLabel.Text = "Course added successfully!";
+                    MessageLabel.ForeColor = System.Drawing.Color.Green;
+                    MessageLabel.Text = "Course added successfully!";
+                }
+
+                // Clear input fields
+                ClearInputFields();
+                LoadCourses();
             }
-
-            // Clear input fields
-            ClearInputFields();
-            LoadCourses();
+            catch (FormatException ex)
+            {
+                MessageLabel.ForeColor = System.Drawing.Color.Red;
+                MessageLabel.Text = "Invalid data format. Please check your inputs.";
+                System.Diagnostics.Debug.WriteLine("Format Exception: " + ex.Message);
+            }
+            catch (SqlException ex)
+            {
+                MessageLabel.ForeColor = System.Drawing.Color.Red;
+                MessageLabel.Text = "A database error occurred. Please contact the administrator.";
+                System.Diagnostics.Debug.WriteLine("SQL Exception: " + ex.Message);
+            }
+            catch (Exception ex)
+            {
+                MessageLabel.ForeColor = System.Drawing.Color.Red;
+                MessageLabel.Text = "An unexpected error occurred. Please try again.";
+                System.Diagnostics.Debug.WriteLine("General Exception: " + ex.Message);
+            }
         }
 
         private void DeleteCourse(int courseId)

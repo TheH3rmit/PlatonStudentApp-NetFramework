@@ -38,9 +38,6 @@
                             <li class="nav-item">
                                 <a class="nav-link" runat="server" href="~/StudentDashboard.aspx">Student Dashboard</a>
                             </li>
-                            <li class="nav-item">
-                                <a class="nav-link" runat="server" href="~/Grades.aspx">My Grades</a>
-                            </li>
                         </asp:PlaceHolder>
 
                         <!-- Teacher Links -->

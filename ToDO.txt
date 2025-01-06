@@ -1,6 +1,7 @@
-﻿AJAX FOR RESUBMITION PROBLEM
+﻿AJAX FOR RESUBMITION PROBLEM  or smth else 
 
 
+Password Hashing
 Password reset
 
 Responsive?

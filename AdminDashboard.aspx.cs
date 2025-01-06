@@ -45,25 +45,45 @@ namespace PlatonStudentApp
         {
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
-                string query = @"INSERT INTO Users 
-                                (Username, Password, Email, Role, FirstName, LastName, PhoneNumber, Address, AdditionalData, CreatedDate) 
-                                VALUES 
-                                (@Username, @Password, @Email, @Role, @FirstName, @LastName, @PhoneNumber, @Address, @AdditionalData, GETDATE())";
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@Username", UsernameTextBox.Text.Trim());
-                cmd.Parameters.AddWithValue("@Password", PasswordTextBox.Text.Trim()); // Note: Password should be hashed in production
-                cmd.Parameters.AddWithValue("@Email", EmailTextBox.Text.Trim());
-                cmd.Parameters.AddWithValue("@Role", RoleDropDown.SelectedValue);
-                cmd.Parameters.AddWithValue("@FirstName", FirstNameTextBox.Text.Trim());
-                cmd.Parameters.AddWithValue("@LastName", LastNameTextBox.Text.Trim());
-                cmd.Parameters.AddWithValue("@PhoneNumber", PhoneNumberTextBox.Text.Trim());
-                cmd.Parameters.AddWithValue("@Address", AddressTextBox.Text.Trim());
-                cmd.Parameters.AddWithValue("@AdditionalData", AdditionalDataTextBox.Text.Trim());
-
                 conn.Open();
-                cmd.ExecuteNonQuery();
+
+                // Check if the username already exists
+                string checkQuery = "SELECT COUNT(*) FROM Users WHERE Username = @Username";
+                using (SqlCommand checkCmd = new SqlCommand(checkQuery, conn))
+                {
+                    checkCmd.Parameters.AddWithValue("@Username", UsernameTextBox.Text.Trim());
+                    int usernameExists = (int)checkCmd.ExecuteScalar();
+
+                    if (usernameExists > 0)
+                    {
+                        ResultLabel.ForeColor = System.Drawing.Color.Red;
+                        ResultLabel.Text = "Error: Username already exists. Please choose a different username.";
+                        return;
+                    }
+                }
+
+                // Insert the new user if username is unique
+                string insertQuery = @"INSERT INTO Users 
+                               (Username, Password, Email, Role, FirstName, LastName, PhoneNumber, Address, AdditionalData, CreatedDate) 
+                               VALUES 
+                               (@Username, @Password, @Email, @Role, @FirstName, @LastName, @PhoneNumber, @Address, @AdditionalData, GETDATE())";
+                using (SqlCommand insertCmd = new SqlCommand(insertQuery, conn))
+                {
+                    insertCmd.Parameters.AddWithValue("@Username", UsernameTextBox.Text.Trim());
+                    insertCmd.Parameters.AddWithValue("@Password", PasswordTextBox.Text.Trim()); // Note: Hash the password in production
+                    insertCmd.Parameters.AddWithValue("@Email", EmailTextBox.Text.Trim());
+                    insertCmd.Parameters.AddWithValue("@Role", RoleDropDown.SelectedValue);
+                    insertCmd.Parameters.AddWithValue("@FirstName", FirstNameTextBox.Text.Trim());
+                    insertCmd.Parameters.AddWithValue("@LastName", LastNameTextBox.Text.Trim());
+                    insertCmd.Parameters.AddWithValue("@PhoneNumber", PhoneNumberTextBox.Text.Trim());
+                    insertCmd.Parameters.AddWithValue("@Address", AddressTextBox.Text.Trim());
+                    insertCmd.Parameters.AddWithValue("@AdditionalData", AdditionalDataTextBox.Text.Trim());
+
+                    insertCmd.ExecuteNonQuery();
+                }
             }
 
+            ResultLabel.ForeColor = System.Drawing.Color.Green;
             ResultLabel.Text = "User added successfully!";
             ClearForm();
             LoadUsers(); // Refresh the GridView
