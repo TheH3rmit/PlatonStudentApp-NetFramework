@@ -3,37 +3,39 @@
 <asp:Content ID="Content1" ContentPlaceHolderID="MainContent" runat="server">
     <h1>Manage Courses</h1>
 
-    <!-- GridView to Display Courses -->
-    <asp:GridView ID="CoursesGridView" runat="server" AutoGenerateColumns="False" 
-        DataKeyNames="CourseID" 
-        OnRowEditing="CoursesGridView_RowEditing" 
-        OnRowCancelingEdit="CoursesGridView_RowCancelingEdit" 
-        OnRowUpdating="CoursesGridView_RowUpdating" 
-        OnRowCommand="CoursesGridView_RowCommand">
-        <Columns>
-            <asp:BoundField DataField="CourseID" HeaderText="Course ID" ReadOnly="True" />
-            <asp:BoundField DataField="CourseName" HeaderText="Course Name" />
-            <asp:BoundField DataField="Description" HeaderText="Description" />
-            <asp:BoundField DataField="Credits" HeaderText="Credits" />
-            <asp:BoundField DataField="StartDate" HeaderText="Start Date" DataFormatString="{0:yyyy-MM-dd}" />
-            <asp:BoundField DataField="EndDate" HeaderText="End Date" DataFormatString="{0:yyyy-MM-dd}" />
-            <asp:TemplateField HeaderText="Teacher">
-                <ItemTemplate>
-                    <asp:Label ID="TeacherLabel" runat="server" Text='<%# Eval("TeacherName") %>'></asp:Label>
-                </ItemTemplate>
-                <EditItemTemplate>
-                    <asp:DropDownList ID="TeacherDropDown" runat="server"></asp:DropDownList>
-                </EditItemTemplate>
-            </asp:TemplateField>
-            <asp:CommandField ShowEditButton="True" />
-            <asp:ButtonField Text="Delete" CommandName="Delete" />
-        </Columns>
-    </asp:GridView>
+    <!-- GridView to Display and Edit Courses -->
+<asp:GridView ID="CoursesGridView" runat="server" AutoGenerateColumns="False" 
+    DataKeyNames="CourseID,TeacherID" 
+    OnRowEditing="CoursesGridView_RowEditing" 
+    OnRowCancelingEdit="CoursesGridView_RowCancelingEdit" 
+    OnRowUpdating="CoursesGridView_RowUpdating" 
+    OnRowDeleting="CoursesGridView_RowDeleting">
+    <Columns>
+        <asp:BoundField DataField="CourseID" HeaderText="Course ID" ReadOnly="True" />
+        <asp:BoundField DataField="CourseName" HeaderText="Course Name" />
+        <asp:BoundField DataField="Description" HeaderText="Description" />
+        <asp:BoundField DataField="Credits" HeaderText="Credits" />
+        <asp:BoundField DataField="StartDate" HeaderText="Start Date" DataFormatString="{0:yyyy-MM-dd}" />
+        <asp:BoundField DataField="EndDate" HeaderText="End Date" DataFormatString="{0:yyyy-MM-dd}" />
+        <asp:TemplateField HeaderText="Teacher">
+            <ItemTemplate>
+                <asp:Label ID="TeacherLabel" runat="server" Text='<%# Eval("TeacherName") %>'></asp:Label>
+            </ItemTemplate>
+            <EditItemTemplate>
+                <asp:DropDownList ID="TeacherDropDown" runat="server"></asp:DropDownList>
+            </EditItemTemplate>
+        </asp:TemplateField>
+        <asp:CommandField ShowEditButton="True" />
+        <asp:CommandField ShowDeleteButton="True" />
+    </Columns>
+</asp:GridView>
+
+
 
     <br />
 
-    <!-- Input Fields to Add or Update Course -->
-    <h3>Add / Update Course</h3>
+    <!-- Input Fields to Add Course -->
+    <h3>Add Course</h3>
     <div>
         <asp:TextBox ID="CourseNameTextBox" runat="server" Placeholder="Course Name" CssClass="form-control"></asp:TextBox>
         <br />

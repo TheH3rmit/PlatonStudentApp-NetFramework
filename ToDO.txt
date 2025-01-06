@@ -1,13 +1,5 @@
-﻿Rewok the admin sites
-	Managing courses and who is assigned to them
-	Managing all users/ all students/ all admins/ all teachers 
+﻿AJAX FOR RESUBMITION PROBLEM
 
-Teacher
-	Managing grades of students
-
-Students 
-	Enroling into the courses 
-	Able to view grades
 
 Password reset
 
