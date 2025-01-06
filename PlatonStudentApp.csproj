@@ -239,6 +239,7 @@
     <Compile Include="Grades.aspx.designer.cs">
       <DependentUpon>Grades.aspx</DependentUpon>
     </Compile>
+    <Compile Include="Helper.cs" />
     <Compile Include="Login.aspx.cs">
       <DependentUpon>Login.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>

@@ -128,14 +128,29 @@ namespace PlatonStudentApp
         {
             using (SqlConnection conn = new SqlConnection(connectionString))
             {
-                string query = "DELETE FROM Courses WHERE CourseID = @CourseID";
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@CourseID", courseId);
-
                 conn.Open();
-                cmd.ExecuteNonQuery();
+
+                // Delete related enrollments
+                string deleteEnrollmentsQuery = "DELETE FROM Enrollments WHERE CourseID = @CourseID";
+                using (SqlCommand cmd = new SqlCommand(deleteEnrollmentsQuery, conn))
+                {
+                    cmd.Parameters.AddWithValue("@CourseID", courseId);
+                    cmd.ExecuteNonQuery();
+                }
+
+                // Delete the course
+                string deleteCourseQuery = "DELETE FROM Courses WHERE CourseID = @CourseID";
+                using (SqlCommand cmd = new SqlCommand(deleteCourseQuery, conn))
+                {
+                    cmd.Parameters.AddWithValue("@CourseID", courseId);
+                    cmd.ExecuteNonQuery();
+                }
             }
+
+            MessageLabel.ForeColor = System.Drawing.Color.Green;
+            MessageLabel.Text = "Course and its related enrollments deleted successfully!";
         }
+
 
         protected void CoursesGridView_RowEditing(object sender, GridViewEditEventArgs e)
         {
