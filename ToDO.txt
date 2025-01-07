@@ -1,10 +1,9 @@
-﻿Password Hashing
-Password reset
+﻿
 
-Responsive?
 
-Make dataacess layer to seprate 
-
+Seperate into
+	buissnes logic layer 
+	data access layer
 Making classes/lists of students in the course?
 Search and filter funcionality for all users for certain things??
 
