@@ -1,7 +1,5 @@
-﻿using System;
-using System.Configuration;
-using System.Data;
-using System.Data.SqlClient;
+﻿using PlatonStudentApp.BusinessLogic;
+using System;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
@@ -9,11 +7,11 @@ namespace PlatonStudentApp
 {
     public partial class TeacherDashboard : System.Web.UI.Page
     {
-        private string connectionString;
+        private TeacherService teacherService;
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            connectionString = ConfigurationManager.ConnectionStrings["ConnectionString"].ConnectionString;
+            teacherService = new TeacherService();
 
             // Ensure only teachers can access this page
             if (Session["Role"] == null || Session["Role"].ToString() != "Teacher")
@@ -46,29 +44,14 @@ namespace PlatonStudentApp
 
         private void LoadCourses()
         {
-            int teacherId = Convert.ToInt32(Session["UserID"]); // Get the teacher's UserID from the session
+            int teacherId = Convert.ToInt32(Session["UserID"]);
+            CourseDropDown.DataSource = teacherService.GetCoursesForTeacher(teacherId);
+            CourseDropDown.DataTextField = "CourseName";
+            CourseDropDown.DataValueField = "CourseID";
+            CourseDropDown.DataBind();
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                string query = @"
-                    SELECT CourseID, CourseName 
-                    FROM Courses 
-                    WHERE TeacherID = @TeacherID";
-
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@TeacherID", teacherId);
-
-                conn.Open();
-                SqlDataReader reader = cmd.ExecuteReader();
-
-                CourseDropDown.DataSource = reader;
-                CourseDropDown.DataTextField = "CourseName";
-                CourseDropDown.DataValueField = "CourseID";
-                CourseDropDown.DataBind();
-
-                // Add a default "Select a Course" option
-                CourseDropDown.Items.Insert(0, new ListItem("-- Select a Course --", "0"));
-            }
+            // Add a default "Select a Course" option
+            CourseDropDown.Items.Insert(0, new ListItem("-- Select a Course --", "0"));
         }
 
         protected void CourseDropDown_SelectedIndexChanged(object sender, EventArgs e)
@@ -77,7 +60,7 @@ namespace PlatonStudentApp
 
             if (courseId > 0)
             {
-                LoadStudents(courseId); // Load students for the selected course
+                LoadStudents(courseId);
             }
             else
             {
@@ -89,34 +72,8 @@ namespace PlatonStudentApp
 
         private void LoadStudents(int courseId)
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                string query = @"
-                    SELECT 
-                        e.StudentID,
-                        u.FirstName,
-                        u.LastName,
-                        e.Grade,
-                        e.CourseID
-                    FROM 
-                        Enrollments e
-                    INNER JOIN 
-                        Users u ON e.StudentID = u.UserID
-                    WHERE 
-                        e.CourseID = @CourseID";
-
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@CourseID", courseId);
-
-                SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                DataTable studentsTable = new DataTable();
-
-                conn.Open();
-                adapter.Fill(studentsTable);
-
-                StudentsGridView.DataSource = studentsTable;
-                StudentsGridView.DataBind();
-            }
+            StudentsGridView.DataSource = teacherService.GetStudentsForCourse(courseId);
+            StudentsGridView.DataBind();
         }
 
         protected void UpdateGrade_Command(object sender, GridViewCommandEventArgs e)
@@ -148,30 +105,20 @@ namespace PlatonStudentApp
                     return;
                 }
 
-                try
+                bool success = teacherService.UpdateStudentGrade(studentId, courseId, parsedGrade);
+
+                if (success)
                 {
-                    using (SqlConnection conn = new SqlConnection(connectionString))
-                    {
-                        string query = "UPDATE Enrollments SET Grade = @Grade WHERE StudentID = @StudentID AND CourseID = @CourseID";
-                        SqlCommand cmd = new SqlCommand(query, conn);
-                        cmd.Parameters.AddWithValue("@Grade", parsedGrade);
-                        cmd.Parameters.AddWithValue("@StudentID", studentId);
-                        cmd.Parameters.AddWithValue("@CourseID", courseId);
-
-                        conn.Open();
-                        cmd.ExecuteNonQuery();
-                    }
-
                     Session["Message"] = "Grade updated successfully.";
                     Session["MessageType"] = "Success";
                 }
-                catch (Exception ex)
+                else
                 {
-                    Session["Message"] = "Error updating grade: " + ex.Message;
+                    Session["Message"] = "Error updating grade.";
                     Session["MessageType"] = "Error";
                 }
 
-                // Redirect to the same page to avoid form resubmission
+                // Redirect to avoid form resubmission
                 Response.Redirect(Request.Url.AbsoluteUri);
             }
         }

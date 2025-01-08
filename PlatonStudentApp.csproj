@@ -208,6 +208,13 @@
       <DependentUpon>About.aspx</DependentUpon>
     </Compile>
     <Compile Include="App_Start\RouteConfig.cs" />
+    <Compile Include="BusinessLogic\CourseService.cs" />
+    <Compile Include="BusinessLogic\EnrollmentService.cs" />
+    <Compile Include="BusinessLogic\TeacherService.cs" />
+    <Compile Include="DataAccess\CourseRepository.cs" />
+    <Compile Include="DataAccess\TeacherRepository.cs" />
+    <Compile Include="DataAccess\UserRepository .cs" />
+    <Compile Include="BusinessLogic\UserService.cs" />
     <Compile Include="Contact.aspx.cs">
       <DependentUpon>Contact.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -229,6 +236,7 @@
     <Compile Include="Default.aspx.designer.cs">
       <DependentUpon>Default.aspx</DependentUpon>
     </Compile>
+    <Compile Include="DataAccess\EnrollmentRepository.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
@@ -326,10 +334,7 @@
       <DependentUpon>AdminDashboard.aspx</DependentUpon>
     </Compile>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="BusinessLogic\" />
-    <Folder Include="DataAccess\" />
-  </ItemGroup>
+  <ItemGroup />
   <ItemGroup>
     <None Include="packages.config" />
     <Content Include="Scripts\jquery-3.7.0.slim.min.map" />

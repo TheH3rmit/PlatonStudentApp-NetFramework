@@ -1,18 +1,16 @@
-﻿using System;
-using System.Data;
-using System.Data.SqlClient;
-using System.Configuration;
+﻿using PlatonStudentApp.BusinessLogic;
+using System;
 using System.Web.UI.WebControls;
 
 namespace PlatonStudentApp
 {
     public partial class AdminDashboard : System.Web.UI.Page
     {
-        private string connectionString;
+        private UserService userService;
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            connectionString = ConfigurationManager.ConnectionStrings["ConnectionString"].ConnectionString;
+            userService = new UserService();
 
             // Restrict access to Admins only
             if (Session["Role"] == null || Session["Role"].ToString() != "Admin")
@@ -22,7 +20,7 @@ namespace PlatonStudentApp
 
             if (!IsPostBack)
             {
-                LoadUsers(); // Load users into the GridView
+                LoadUsers();
 
                 // Display message from Session if it exists
                 if (Session["Message"] != null)
@@ -34,96 +32,49 @@ namespace PlatonStudentApp
             }
         }
 
-
         private void LoadUsers()
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                string query = "SELECT UserID, Username, Email, Role, FirstName, LastName, PhoneNumber, Address, AdditionalData FROM Users";
-                SqlDataAdapter adapter = new SqlDataAdapter(query, conn);
-                DataTable usersTable = new DataTable();
-                conn.Open();
-                adapter.Fill(usersTable);
-
-                UsersGridView.DataSource = usersTable;
-                UsersGridView.DataBind();
-            }
+            UsersGridView.DataSource = userService.GetAllUsers();
+            UsersGridView.DataBind();
         }
 
         protected void AddUserButton_Click(object sender, EventArgs e)
         {
-            try
+            if (userService.IsUsernameTaken(UsernameTextBox.Text.Trim()))
             {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    conn.Open();
+                ResultLabel.ForeColor = System.Drawing.Color.Red;
+                ResultLabel.Text = "Error: Username already exists. Please choose a different username.";
+                return;
+            }
 
-                    // Check if the username already exists
-                    string checkQuery = "SELECT COUNT(*) FROM Users WHERE Username = @Username";
-                    using (SqlCommand checkCmd = new SqlCommand(checkQuery, conn))
-                    {
-                        checkCmd.Parameters.AddWithValue("@Username", UsernameTextBox.Text.Trim());
-                        int usernameExists = (int)checkCmd.ExecuteScalar();
+            bool success = userService.AddUser(
+                UsernameTextBox.Text.Trim(),
+                PasswordTextBox.Text.Trim(), // Note: Password should be hashed in production
+                EmailTextBox.Text.Trim(),
+                RoleDropDown.SelectedValue,
+                FirstNameTextBox.Text.Trim(),
+                LastNameTextBox.Text.Trim(),
+                PhoneNumberTextBox.Text.Trim(),
+                AddressTextBox.Text.Trim(),
+                AdditionalDataTextBox.Text.Trim()
+            );
 
-                        if (usernameExists > 0)
-                        {
-                            ResultLabel.ForeColor = System.Drawing.Color.Red;
-                            ResultLabel.Text = "Error: Username already exists. Please choose a different username.";
-                            return;
-                        }
-                    }
-
-                    // Insert the new user if username is unique
-                    string insertQuery = @"INSERT INTO Users 
-                               (Username, Password, Email, Role, FirstName, LastName, PhoneNumber, Address, AdditionalData, CreatedDate) 
-                               VALUES 
-                               (@Username, @Password, @Email, @Role, @FirstName, @LastName, @PhoneNumber, @Address, @AdditionalData, GETDATE())";
-                    using (SqlCommand insertCmd = new SqlCommand(insertQuery, conn))
-                    {
-                        insertCmd.Parameters.AddWithValue("@Username", UsernameTextBox.Text.Trim());
-                        insertCmd.Parameters.AddWithValue("@Password", PasswordTextBox.Text.Trim()); // Note: Hash the password in production
-                        insertCmd.Parameters.AddWithValue("@Email", EmailTextBox.Text.Trim());
-                        insertCmd.Parameters.AddWithValue("@Role", RoleDropDown.SelectedValue);
-                        insertCmd.Parameters.AddWithValue("@FirstName", FirstNameTextBox.Text.Trim());
-                        insertCmd.Parameters.AddWithValue("@LastName", LastNameTextBox.Text.Trim());
-                        insertCmd.Parameters.AddWithValue("@PhoneNumber", PhoneNumberTextBox.Text.Trim());
-                        insertCmd.Parameters.AddWithValue("@Address", AddressTextBox.Text.Trim());
-                        insertCmd.Parameters.AddWithValue("@AdditionalData", AdditionalDataTextBox.Text.Trim());
-
-                        insertCmd.ExecuteNonQuery();
-                    }
-                }
-
-                // Set success message in Session and redirect
+            if (success)
+            {
                 Session["Message"] = "User added successfully!";
                 Response.Redirect(Request.Url.AbsoluteUri);
             }
-            catch (Exception ex)
+            else
             {
                 ResultLabel.ForeColor = System.Drawing.Color.Red;
                 ResultLabel.Text = "An error occurred while adding the user.";
-                System.Diagnostics.Debug.WriteLine("Error: " + ex.Message);
             }
-        }
-
-
-        private void ClearForm()
-        {
-            UsernameTextBox.Text = string.Empty;
-            PasswordTextBox.Text = string.Empty;
-            EmailTextBox.Text = string.Empty;
-            RoleDropDown.SelectedIndex = 0;
-            FirstNameTextBox.Text = string.Empty;
-            LastNameTextBox.Text = string.Empty;
-            PhoneNumberTextBox.Text = string.Empty;
-            AddressTextBox.Text = string.Empty;
-            AdditionalDataTextBox.Text = string.Empty;
         }
 
         protected void UsersGridView_RowEditing(object sender, GridViewEditEventArgs e)
         {
             UsersGridView.EditIndex = e.NewEditIndex;
-            LoadUsers(); // Refresh GridView to enter edit mode
+            LoadUsers();
         }
 
         protected void UsersGridView_RowUpdating(object sender, GridViewUpdateEventArgs e)
@@ -139,52 +90,39 @@ namespace PlatonStudentApp
             string address = ((TextBox)row.Cells[7].Controls[0]).Text;
             string additionalData = ((TextBox)row.Cells[8].Controls[0]).Text;
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            bool success = userService.UpdateUser(userId, username, email, role, firstName, lastName, phoneNumber, address, additionalData);
+
+            if (success)
             {
-                string query = @"UPDATE Users 
-                                SET Username = @Username, Email = @Email, Role = @Role, FirstName = @FirstName, LastName = @LastName, 
-                                    PhoneNumber = @PhoneNumber, Address = @Address, AdditionalData = @AdditionalData
-                                WHERE UserID = @UserID";
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@UserID", userId);
-                cmd.Parameters.AddWithValue("@Username", username);
-                cmd.Parameters.AddWithValue("@Email", email);
-                cmd.Parameters.AddWithValue("@Role", role);
-                cmd.Parameters.AddWithValue("@FirstName", firstName);
-                cmd.Parameters.AddWithValue("@LastName", lastName);
-                cmd.Parameters.AddWithValue("@PhoneNumber", phoneNumber);
-                cmd.Parameters.AddWithValue("@Address", address);
-                cmd.Parameters.AddWithValue("@AdditionalData", additionalData);
-
-                conn.Open();
-                cmd.ExecuteNonQuery();
+                UsersGridView.EditIndex = -1;
+                LoadUsers();
             }
-
-            UsersGridView.EditIndex = -1; // Exit edit mode
-            LoadUsers(); // Refresh the GridView
+            else
+            {
+                ResultLabel.ForeColor = System.Drawing.Color.Red;
+                ResultLabel.Text = "An error occurred while updating the user.";
+            }
         }
 
         protected void UsersGridView_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
         {
             UsersGridView.EditIndex = -1;
-            LoadUsers(); // Refresh the GridView to cancel edit mode
+            LoadUsers();
         }
 
         protected void UsersGridView_RowDeleting(object sender, GridViewDeleteEventArgs e)
         {
             int userId = Convert.ToInt32(UsersGridView.DataKeys[e.RowIndex].Value);
 
-            using (SqlConnection conn = new SqlConnection(connectionString))
+            if (userService.DeleteUser(userId))
             {
-                string query = "DELETE FROM Users WHERE UserID = @UserID";
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@UserID", userId);
-
-                conn.Open();
-                cmd.ExecuteNonQuery();
+                LoadUsers();
             }
-
-            LoadUsers(); // Refresh the GridView
+            else
+            {
+                ResultLabel.ForeColor = System.Drawing.Color.Red;
+                ResultLabel.Text = "An error occurred while deleting the user.";
+            }
         }
     }
 }

@@ -1,19 +1,16 @@
-﻿using System;
-using System.Configuration;
-using System.Data;
-using System.Data.SqlClient;
-using System.Web.UI;
+﻿using PlatonStudentApp.BusinessLogic;
+using System;
 using System.Web.UI.WebControls;
 
 namespace PlatonStudentApp
 {
     public partial class StudentDashboard : System.Web.UI.Page
     {
-        private string connectionString;
+        private EnrollmentService enrollmentService;
 
         protected void Page_Load(object sender, EventArgs e)
         {
-            connectionString = ConfigurationManager.ConnectionStrings["ConnectionString"].ConnectionString;
+            enrollmentService = new EnrollmentService();
 
             // Ensure only students can access this page
             if (Session["Role"] == null || Session["Role"].ToString() != "Student")
@@ -52,81 +49,20 @@ namespace PlatonStudentApp
             }
         }
 
-
-        // Load available courses
         private void LoadAvailableCourses()
         {
-            try
-            {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"
-                SELECT c.CourseID, c.CourseName, u.FirstName + ' ' + u.LastName AS TeacherName
-                FROM Courses c
-                LEFT JOIN Users u ON c.TeacherID = u.UserID
-                WHERE NOT EXISTS (
-                    SELECT 1
-                    FROM Enrollments e
-                    WHERE e.CourseID = c.CourseID AND e.StudentID = @StudentID
-                )";
-
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@StudentID", Convert.ToInt32(Session["StudentID"]));
-
-                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                    DataTable coursesTable = new DataTable();
-
-                    conn.Open();
-                    adapter.Fill(coursesTable);
-
-                    CoursesGridView.DataSource = coursesTable;
-                    CoursesGridView.DataBind();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageLabel.ForeColor = System.Drawing.Color.Red;
-                MessageLabel.Text = "Error loading available courses: " + ex.Message;
-            }
+            int studentId = Convert.ToInt32(Session["StudentID"]);
+            CoursesGridView.DataSource = enrollmentService.GetAvailableCoursesForStudent(studentId);
+            CoursesGridView.DataBind();
         }
 
-
-        // Load enrolled courses with grades (read-only)
         private void LoadEnrolledCoursesWithGrades()
         {
-            try
-            {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"
-                SELECT e.CourseID, c.CourseName, e.Grade, u.FirstName + ' ' + u.LastName AS TeacherName
-                FROM Enrollments e
-                INNER JOIN Courses c ON e.CourseID = c.CourseID
-                LEFT JOIN Users u ON c.TeacherID = u.UserID
-                WHERE e.StudentID = @StudentID";
-
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@StudentID", Convert.ToInt32(Session["StudentID"]));
-
-                    SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                    DataTable enrolledCoursesTable = new DataTable();
-
-                    conn.Open();
-                    adapter.Fill(enrolledCoursesTable);
-
-                    EnrolledCoursesGridView.DataSource = enrolledCoursesTable;
-                    EnrolledCoursesGridView.DataBind();
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageLabel.ForeColor = System.Drawing.Color.Red;
-                MessageLabel.Text = "Error loading enrolled courses: " + ex.Message;
-            }
+            int studentId = Convert.ToInt32(Session["StudentID"]);
+            EnrolledCoursesGridView.DataSource = enrollmentService.GetEnrolledCoursesWithGrades(studentId);
+            EnrolledCoursesGridView.DataBind();
         }
 
-
-        // Handle enrollment
         protected void CoursesGridView_RowCommand(object sender, GridViewCommandEventArgs e)
         {
             if (e.CommandName == "Enroll")
@@ -134,61 +70,26 @@ namespace PlatonStudentApp
                 int rowIndex = Convert.ToInt32(e.CommandArgument);
                 GridViewRow row = CoursesGridView.Rows[rowIndex];
 
-                int courseId = Convert.ToInt32(row.Cells[0].Text); // Get CourseID
-                int studentId = Convert.ToInt32(Session["StudentID"]); // Get StudentID from session
+                int courseId = Convert.ToInt32(row.Cells[0].Text);
+                int studentId = Convert.ToInt32(Session["StudentID"]);
 
-                EnrollStudentInCourse(studentId, courseId);
-            }
-        }
+                bool success = enrollmentService.EnrollStudentInCourse(studentId, courseId);
 
-        private void EnrollStudentInCourse(int studentId, int courseId)
-        {
-            try
-            {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                if (success)
                 {
-                    // Check if the student is already enrolled in the course
-                    string checkQuery = "SELECT COUNT(*) FROM Enrollments WHERE StudentID = @StudentID AND CourseID = @CourseID";
-                    SqlCommand checkCmd = new SqlCommand(checkQuery, conn);
-                    checkCmd.Parameters.AddWithValue("@StudentID", studentId);
-                    checkCmd.Parameters.AddWithValue("@CourseID", courseId);
-
-                    conn.Open();
-                    int count = (int)checkCmd.ExecuteScalar();
-
-                    if (count > 0)
-                    {
-                        // Student is already enrolled
-                        Session["Message"] = "You are already enrolled in this course.";
-                        Session["MessageType"] = "Error";
-                    }
-                    else
-                    {
-                        // Enroll the student in the course
-                        string enrollQuery = "INSERT INTO Enrollments (StudentID, CourseID, EnrollmentDate) VALUES (@StudentID, @CourseID, GETDATE())";
-                        SqlCommand enrollCmd = new SqlCommand(enrollQuery, conn);
-                        enrollCmd.Parameters.AddWithValue("@StudentID", studentId);
-                        enrollCmd.Parameters.AddWithValue("@CourseID", courseId);
-
-                        enrollCmd.ExecuteNonQuery();
-
-                        Session["Message"] = "Successfully enrolled in the course.";
-                        Session["MessageType"] = "Success";
-                    }
+                    Session["Message"] = "Successfully enrolled in the course.";
+                    Session["MessageType"] = "Success";
+                }
+                else
+                {
+                    Session["Message"] = "You are already enrolled in this course.";
+                    Session["MessageType"] = "Error";
                 }
 
-                // Redirect to the same page to avoid form resubmission
-                Response.Redirect(Request.Url.AbsoluteUri);
-            }
-            catch (Exception ex)
-            {
-                Session["Message"] = "Error enrolling in course: " + ex.Message;
-                Session["MessageType"] = "Error";
                 Response.Redirect(Request.Url.AbsoluteUri);
             }
         }
 
-        // Handle unenrollment
         protected void EnrolledCoursesGridView_RowCommand(object sender, GridViewCommandEventArgs e)
         {
             if (e.CommandName == "Unenroll")
@@ -196,50 +97,24 @@ namespace PlatonStudentApp
                 int rowIndex = Convert.ToInt32(e.CommandArgument);
                 GridViewRow row = EnrolledCoursesGridView.Rows[rowIndex];
 
-                int courseId = Convert.ToInt32(row.Cells[0].Text); // Get CourseID
-                int studentId = Convert.ToInt32(Session["StudentID"]); // Get StudentID from session
+                int courseId = Convert.ToInt32(row.Cells[0].Text);
+                int studentId = Convert.ToInt32(Session["StudentID"]);
 
-                UnenrollStudentFromCourse(studentId, courseId);
-            }
-        }
+                bool success = enrollmentService.UnenrollStudentFromCourse(studentId, courseId);
 
-        private void UnenrollStudentFromCourse(int studentId, int courseId)
-        {
-            try
-            {
-                using (SqlConnection conn = new SqlConnection(connectionString))
+                if (success)
                 {
-                    string query = "DELETE FROM Enrollments WHERE StudentID = @StudentID AND CourseID = @CourseID";
-
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@StudentID", studentId);
-                    cmd.Parameters.AddWithValue("@CourseID", courseId);
-
-                    conn.Open();
-                    int rowsAffected = cmd.ExecuteNonQuery();
-
-                    if (rowsAffected > 0)
-                    {
-                        Session["Message"] = "Successfully unenrolled from the course.";
-                        Session["MessageType"] = "Success";
-                    }
-                    else
-                    {
-                        Session["Message"] = "Error: Could not find the enrollment to delete.";
-                        Session["MessageType"] = "Error";
-                    }
-
-                    // Redirect to the same page to avoid form resubmission
-                    Response.Redirect(Request.Url.AbsoluteUri);
+                    Session["Message"] = "Successfully unenrolled from the course.";
+                    Session["MessageType"] = "Success";
                 }
-            }
-            catch (Exception ex)
-            {
-                Session["Message"] = "Error unenrolling from course: " + ex.Message;
-                Session["MessageType"] = "Error";
+                else
+                {
+                    Session["Message"] = "Error: Could not unenroll from the course.";
+                    Session["MessageType"] = "Error";
+                }
+
                 Response.Redirect(Request.Url.AbsoluteUri);
             }
         }
-
     }
 }

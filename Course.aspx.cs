@@ -1,7 +1,5 @@
-﻿using System;
-using System.Configuration;
-using System.Data;
-using System.Data.SqlClient;
+﻿using PlatonStudentApp.BusinessLogic;
+using System;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
@@ -9,10 +7,11 @@ namespace PlatonStudentApp
 {
     public partial class Course : System.Web.UI.Page
     {
-        private string connectionString;
+        private CourseService courseService;
+
         protected void Page_Load(object sender, EventArgs e)
         {
-            connectionString = ConfigurationManager.ConnectionStrings["ConnectionString"].ConnectionString;
+            courseService = new CourseService();
 
             // Ensure only Admins or Teachers can access this page
             if (Session["Role"] == null || (Session["Role"].ToString() != "Admin" && Session["Role"].ToString() != "Teacher"))
@@ -35,102 +34,35 @@ namespace PlatonStudentApp
             }
         }
 
-
         private void LoadCourses()
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                string query = @"
-                SELECT 
-                    c.CourseID, 
-                    c.CourseName, 
-                    c.Description, 
-                    c.Credits, 
-                    c.StartDate, 
-                    c.EndDate, 
-                    c.TeacherID, 
-                    u.FirstName + ' ' + u.LastName AS TeacherName
-                FROM 
-                    Courses c
-                LEFT JOIN 
-                    Users u ON c.TeacherID = u.UserID";
-
-                SqlCommand cmd = new SqlCommand(query, conn);
-                SqlDataAdapter adapter = new SqlDataAdapter(cmd);
-                DataTable coursesTable = new DataTable();
-
-                conn.Open();
-                adapter.Fill(coursesTable);
-
-                CoursesGridView.DataSource = coursesTable;
-                CoursesGridView.DataBind();
-            }
+            CoursesGridView.DataSource = courseService.GetAllCourses();
+            CoursesGridView.DataBind();
         }
 
         private void LoadTeachers()
         {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                string query = "SELECT UserID, FirstName + ' ' + LastName AS FullName FROM Users WHERE Role = 'Teacher'";
-                SqlCommand cmd = new SqlCommand(query, conn);
+            TeacherDropDown.DataSource = courseService.GetTeachers();
+            TeacherDropDown.DataTextField = "FullName";
+            TeacherDropDown.DataValueField = "UserID";
+            TeacherDropDown.DataBind();
 
-                conn.Open();
-                SqlDataReader reader = cmd.ExecuteReader();
-
-                TeacherDropDown.DataSource = reader;
-                TeacherDropDown.DataTextField = "FullName";
-                TeacherDropDown.DataValueField = "UserID";
-                TeacherDropDown.DataBind();
-
-                TeacherDropDown.Items.Insert(0, new ListItem("-- Select a Teacher --", "0"));
-            }
+            TeacherDropDown.Items.Insert(0, new ListItem("-- Select a Teacher --", "0"));
         }
 
         protected void AddCourseButton_Click(object sender, EventArgs e)
         {
             try
             {
-                // Validate fields
-                if (string.IsNullOrEmpty(CourseNameTextBox.Text) ||
-                    string.IsNullOrEmpty(CourseDescriptionTextBox.Text) ||
-                    string.IsNullOrEmpty(CourseCreditsTextBox.Text) ||
-                    string.IsNullOrEmpty(StartDateTextBox.Text) ||
-                    string.IsNullOrEmpty(EndDateTextBox.Text) ||
-                    TeacherDropDown.SelectedValue == "0")
-                {
-                    MessageLabel.ForeColor = System.Drawing.Color.Red;
-                    MessageLabel.Text = "All fields are required.";
-                    return;
-                }
+                courseService.AddCourse(
+                    CourseNameTextBox.Text.Trim(),
+                    CourseDescriptionTextBox.Text.Trim(),
+                    int.Parse(CourseCreditsTextBox.Text.Trim()),
+                    DateTime.Parse(StartDateTextBox.Text.Trim()),
+                    DateTime.Parse(EndDateTextBox.Text.Trim()),
+                    int.Parse(TeacherDropDown.SelectedValue)
+                );
 
-                // Validate numeric fields
-                if (!int.TryParse(CourseCreditsTextBox.Text.Trim(), out int credits) || credits < 1)
-                {
-                    MessageLabel.ForeColor = System.Drawing.Color.Red;
-                    MessageLabel.Text = "Credits must be a valid positive integer.";
-                    return;
-                }
-
-                // Validate date fields
-                if (!DateTime.TryParse(StartDateTextBox.Text.Trim(), out DateTime startDate) ||
-                    !DateTime.TryParse(EndDateTextBox.Text.Trim(), out DateTime endDate))
-                {
-                    MessageLabel.ForeColor = System.Drawing.Color.Red;
-                    MessageLabel.Text = "Start Date and End Date must be valid dates.";
-                    return;
-                }
-
-                if (endDate < startDate)
-                {
-                    MessageLabel.ForeColor = System.Drawing.Color.Red;
-                    MessageLabel.Text = "End Date cannot be earlier than Start Date.";
-                    return;
-                }
-
-                // Add course
-                AddCourse();
-
-                // Set success message in Session and redirect
                 Session["Message"] = "Course added successfully!";
                 Response.Redirect(Request.Url.AbsoluteUri);
             }
@@ -142,215 +74,32 @@ namespace PlatonStudentApp
             }
         }
 
-
-
-        private void AddCourse()
-        {
-            try
-            {
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = @"
-            INSERT INTO Courses (CourseName, Description, Credits, StartDate, EndDate, TeacherID) 
-            VALUES (@CourseName, @Description, @Credits, @StartDate, @EndDate, @TeacherID)";
-                    SqlCommand cmd = new SqlCommand(query, conn);
-                    cmd.Parameters.AddWithValue("@CourseName", CourseNameTextBox.Text.Trim());
-                    cmd.Parameters.AddWithValue("@Description", CourseDescriptionTextBox.Text.Trim());
-                    cmd.Parameters.AddWithValue("@Credits", int.Parse(CourseCreditsTextBox.Text.Trim()));
-                    cmd.Parameters.AddWithValue("@StartDate", DateTime.Parse(StartDateTextBox.Text.Trim()));
-                    cmd.Parameters.AddWithValue("@EndDate", DateTime.Parse(EndDateTextBox.Text.Trim()));
-                    cmd.Parameters.AddWithValue("@TeacherID", int.Parse(TeacherDropDown.SelectedValue));
-
-                    conn.Open();
-                    cmd.ExecuteNonQuery();
-
-                    MessageLabel.ForeColor = System.Drawing.Color.Green;
-                    MessageLabel.Text = "Course added successfully!";
-                }
-
-                // Clear input fields
-                ClearInputFields();
-                LoadCourses();
-            }
-            catch (FormatException ex)
-            {
-                MessageLabel.ForeColor = System.Drawing.Color.Red;
-                MessageLabel.Text = "Invalid data format. Please check your inputs.";
-                System.Diagnostics.Debug.WriteLine("Format Exception: " + ex.Message);
-            }
-            catch (SqlException ex)
-            {
-                MessageLabel.ForeColor = System.Drawing.Color.Red;
-                MessageLabel.Text = "A database error occurred. Please contact the administrator.";
-                System.Diagnostics.Debug.WriteLine("SQL Exception: " + ex.Message);
-            }
-            catch (Exception ex)
-            {
-                MessageLabel.ForeColor = System.Drawing.Color.Red;
-                MessageLabel.Text = "An unexpected error occurred. Please try again.";
-                System.Diagnostics.Debug.WriteLine("General Exception: " + ex.Message);
-            }
-        }
-
-        private void DeleteCourse(int courseId)
-        {
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                conn.Open();
-
-                // Delete related enrollments
-                string deleteEnrollmentsQuery = "DELETE FROM Enrollments WHERE CourseID = @CourseID";
-                using (SqlCommand cmd = new SqlCommand(deleteEnrollmentsQuery, conn))
-                {
-                    cmd.Parameters.AddWithValue("@CourseID", courseId);
-                    cmd.ExecuteNonQuery();
-                }
-
-                // Delete the course
-                string deleteCourseQuery = "DELETE FROM Courses WHERE CourseID = @CourseID";
-                using (SqlCommand cmd = new SqlCommand(deleteCourseQuery, conn))
-                {
-                    cmd.Parameters.AddWithValue("@CourseID", courseId);
-                    cmd.ExecuteNonQuery();
-                }
-            }
-
-            MessageLabel.ForeColor = System.Drawing.Color.Green;
-            MessageLabel.Text = "Course and its related enrollments deleted successfully!";
-        }
-
-
         protected void CoursesGridView_RowEditing(object sender, GridViewEditEventArgs e)
         {
-            // Set the row in edit mode
             CoursesGridView.EditIndex = e.NewEditIndex;
             LoadCourses();
-
-            // Get the current row being edited
-            GridViewRow row = CoursesGridView.Rows[e.NewEditIndex];
-            DropDownList teacherDropDown = (DropDownList)row.FindControl("TeacherDropDown");
-
-            if (teacherDropDown != null)
-            {
-                // Populate the TeacherDropDown with teacher data
-                using (SqlConnection conn = new SqlConnection(connectionString))
-                {
-                    string query = "SELECT UserID, FirstName + ' ' + LastName AS FullName FROM Users WHERE Role = 'Teacher'";
-                    SqlCommand cmd = new SqlCommand(query, conn);
-
-                    conn.Open();
-                    SqlDataReader reader = cmd.ExecuteReader();
-
-                    teacherDropDown.DataSource = reader;
-                    teacherDropDown.DataTextField = "FullName";
-                    teacherDropDown.DataValueField = "UserID";
-                    teacherDropDown.DataBind();
-                }
-
-                teacherDropDown.Items.Insert(0, new ListItem("-- Select a Teacher --", "0"));
-
-                // Set the selected value to the current teacher
-                string teacherId = CoursesGridView.DataKeys[e.NewEditIndex]["TeacherID"]?.ToString();
-                if (!string.IsNullOrEmpty(teacherId))
-                {
-                    teacherDropDown.SelectedValue = teacherId;
-                }
-            }
         }
 
         protected void CoursesGridView_RowCancelingEdit(object sender, GridViewCancelEditEventArgs e)
         {
-            // Cancel edit mode and reload courses
             CoursesGridView.EditIndex = -1;
             LoadCourses();
         }
 
-        protected void CoursesGridView_RowDeleting(object sender, GridViewDeleteEventArgs e)
-        {
-            // Get the CourseID of the row being deleted
-            int courseId = Convert.ToInt32(CoursesGridView.DataKeys[e.RowIndex].Value);
-
-            // Call the DeleteCourse method to delete the course
-            DeleteCourse(courseId);
-
-            // Reload the courses after deletion
-            LoadCourses();
-
-            // Show a success message
-            MessageLabel.ForeColor = System.Drawing.Color.Green;
-            MessageLabel.Text = "Course deleted successfully!";
-        }
-
-        protected void CoursesGridView_RowCommand(object sender, GridViewCommandEventArgs e)
-        {
-            // Example logic: Handle custom commands like "Delete" or "Edit" here
-            if (e.CommandName == "Delete")
-            {
-                int rowIndex = Convert.ToInt32(e.CommandArgument);
-                int courseId = Convert.ToInt32(CoursesGridView.DataKeys[rowIndex].Value);
-
-                // Call the DeleteCourse method to delete the course
-                DeleteCourse(courseId);
-
-                // Reload the courses
-                LoadCourses();
-
-                // Show a success message
-                MessageLabel.ForeColor = System.Drawing.Color.Green;
-                MessageLabel.Text = "Course deleted successfully!";
-            }
-        }
-
-
         protected void CoursesGridView_RowUpdating(object sender, GridViewUpdateEventArgs e)
         {
-            // Get the current row being updated
             GridViewRow row = CoursesGridView.Rows[e.RowIndex];
 
-            // Retrieve data from controls in the row
-            int courseId = Convert.ToInt32(CoursesGridView.DataKeys[e.RowIndex].Value);
-            string courseName = ((TextBox)row.Cells[1].Controls[0]).Text.Trim();
-            string description = ((TextBox)row.Cells[2].Controls[0]).Text.Trim();
-            int credits = int.Parse(((TextBox)row.Cells[3].Controls[0]).Text.Trim());
-            DateTime startDate = DateTime.Parse(((TextBox)row.Cells[4].Controls[0]).Text.Trim());
-            DateTime endDate = DateTime.Parse(((TextBox)row.Cells[5].Controls[0]).Text.Trim());
-            DropDownList teacherDropDown = (DropDownList)row.FindControl("TeacherDropDown");
+            courseService.UpdateCourse(
+                Convert.ToInt32(CoursesGridView.DataKeys[e.RowIndex].Value),
+                ((TextBox)row.Cells[1].Controls[0]).Text.Trim(),
+                ((TextBox)row.Cells[2].Controls[0]).Text.Trim(),
+                int.Parse(((TextBox)row.Cells[3].Controls[0]).Text.Trim()),
+                DateTime.Parse(((TextBox)row.Cells[4].Controls[0]).Text.Trim()),
+                DateTime.Parse(((TextBox)row.Cells[5].Controls[0]).Text.Trim()),
+                int.Parse(((DropDownList)row.FindControl("TeacherDropDown")).SelectedValue)
+            );
 
-            if (teacherDropDown == null || string.IsNullOrEmpty(teacherDropDown.SelectedValue) || teacherDropDown.SelectedValue == "0")
-            {
-                MessageLabel.ForeColor = System.Drawing.Color.Red;
-                MessageLabel.Text = "Error: Please select a valid teacher.";
-                return;
-            }
-
-            int teacherId = int.Parse(teacherDropDown.SelectedValue);
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                string query = @"
-                UPDATE Courses 
-                SET CourseName = @CourseName, 
-                    Description = @Description, 
-                    Credits = @Credits, 
-                    StartDate = @StartDate, 
-                    EndDate = @EndDate, 
-                    TeacherID = @TeacherID 
-                WHERE CourseID = @CourseID";
-
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@CourseID", courseId);
-                cmd.Parameters.AddWithValue("@CourseName", courseName);
-                cmd.Parameters.AddWithValue("@Description", description);
-                cmd.Parameters.AddWithValue("@Credits", credits);
-                cmd.Parameters.AddWithValue("@StartDate", startDate);
-                cmd.Parameters.AddWithValue("@EndDate", endDate);
-                cmd.Parameters.AddWithValue("@TeacherID", teacherId);
-
-                conn.Open();
-                cmd.ExecuteNonQuery();
-            }
-
-            // Reset edit index and reload courses
             CoursesGridView.EditIndex = -1;
             LoadCourses();
 
@@ -358,14 +107,14 @@ namespace PlatonStudentApp
             MessageLabel.Text = "Course updated successfully!";
         }
 
-        private void ClearInputFields()
+        protected void CoursesGridView_RowDeleting(object sender, GridViewDeleteEventArgs e)
         {
-            CourseNameTextBox.Text = string.Empty;
-            CourseDescriptionTextBox.Text = string.Empty;
-            CourseCreditsTextBox.Text = string.Empty;
-            StartDateTextBox.Text = string.Empty;
-            EndDateTextBox.Text = string.Empty;
-            TeacherDropDown.SelectedIndex = 0;
+            courseService.DeleteCourse(Convert.ToInt32(CoursesGridView.DataKeys[e.RowIndex].Value));
+
+            LoadCourses();
+
+            MessageLabel.ForeColor = System.Drawing.Color.Green;
+            MessageLabel.Text = "Course deleted successfully!";
         }
     }
 }

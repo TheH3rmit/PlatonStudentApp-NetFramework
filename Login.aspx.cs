@@ -1,6 +1,5 @@
-﻿using System;
-using System.Configuration;
-using System.Data.SqlClient;
+﻿using PlatonStudentApp.BusinessLogic;
+using System;
 
 namespace PlatonStudentApp
 {
@@ -15,59 +14,42 @@ namespace PlatonStudentApp
             string username = UsernameTextBox.Text.Trim();
             string password = PasswordTextBox.Text.Trim();
 
-            using (SqlConnection conn = new SqlConnection(ConfigurationManager.ConnectionStrings["ConnectionString"].ConnectionString))
+            UserService userService = new UserService();
+            var (userId, role) = userService.ValidateUser(username, password);
+
+            if (userId > 0 && role != null)
             {
-                string query = "SELECT UserID, Role FROM Users WHERE Username = @Username AND Password = @Password";
-                SqlCommand cmd = new SqlCommand(query, conn);
-                cmd.Parameters.AddWithValue("@Username", username);
-                cmd.Parameters.AddWithValue("@Password", password);
+                // Store username, role, and userId in the session
+                Session["Username"] = username;
+                Session["Role"] = role;
+                Session["UserID"] = userId;
 
-                conn.Open();
-                SqlDataReader reader = cmd.ExecuteReader();
-
-                if (reader.Read())
+                if (role == "Student")
                 {
-                    int userId = Convert.ToInt32(reader["UserID"]);
-                    string role = reader["Role"].ToString();
-
-                    // Store username, role, and userId in the session
-                    Session["Username"] = username;
-                    Session["Role"] = role;
-                    Session["UserID"] = userId;
-
-                    if (role == "Student")
+                    int? studentId = userService.GetStudentID(userId);
+                    if (studentId.HasValue)
                     {
-                        // Retrieve StudentID and store it in the session
-                        reader.Close();
-                        string studentQuery = "SELECT UserID FROM Users WHERE UserID = @UserID AND Role = 'Student'";
-                        SqlCommand studentCmd = new SqlCommand(studentQuery, conn);
-                        studentCmd.Parameters.AddWithValue("@UserID", userId);
-
-                        object studentId = studentCmd.ExecuteScalar();
-                        if (studentId != null)
-                        {
-                            Session["StudentID"] = Convert.ToInt32(studentId);
-                            Response.Redirect("StudentDashboard.aspx");
-                        }
-                        else
-                        {
-                            ErrorMessage.Text = "Student record not found. Please contact support.";
-                        }
+                        Session["StudentID"] = studentId.Value;
+                        Response.Redirect("StudentDashboard.aspx");
                     }
-                    else if (role == "Admin")
+                    else
                     {
-                        Response.Redirect("AdminDashboard.aspx");
-                    }
-                    else if (role == "Teacher")
-                    {
-                        Response.Redirect("TeacherDashboard.aspx");
+                        ErrorMessage.Text = "Student record not found. Please contact support.";
                     }
                 }
-                else
+                else if (role == "Admin")
                 {
-                    // Invalid login credentials
-                    ErrorMessage.Text = "Invalid Username or Password.";
+                    Response.Redirect("AdminDashboard.aspx");
                 }
+                else if (role == "Teacher")
+                {
+                    Response.Redirect("TeacherDashboard.aspx");
+                }
+            }
+            else
+            {
+                // Invalid login credentials
+                ErrorMessage.Text = "Invalid Username or Password.";
             }
         }
     }
