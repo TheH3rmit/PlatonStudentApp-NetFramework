@@ -191,7 +191,7 @@
     <Content Include="StudentDashboard.aspx" />
     <Content Include="TeacherDashboard.aspx" />
     <Content Include="test.aspx" />
-    <Content Include="ToDO.txt" />
+    <None Include="README.md" />
     <Content Include="Unauthorized.aspx" />
     <Content Include="ViewSwitcher.ascx" />
     <Content Include="Web.config" />
