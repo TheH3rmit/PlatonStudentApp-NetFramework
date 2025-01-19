@@ -81,7 +81,7 @@ namespace PlatonStudentApp
                     using (SqlCommand insertCmd = new SqlCommand(insertQuery, conn))
                     {
                         insertCmd.Parameters.AddWithValue("@Username", UsernameTextBox.Text.Trim());
-                        insertCmd.Parameters.AddWithValue("@Password", PasswordTextBox.Text.Trim()); // Note: Hash the password in production
+                        insertCmd.Parameters.AddWithValue("@Password", PasswordTextBox.Text.Trim()); 
                         insertCmd.Parameters.AddWithValue("@Email", EmailTextBox.Text.Trim());
                         insertCmd.Parameters.AddWithValue("@Role", RoleDropDown.SelectedValue);
                         insertCmd.Parameters.AddWithValue("@FirstName", FirstNameTextBox.Text.Trim());

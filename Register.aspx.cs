@@ -44,7 +44,7 @@ namespace PlatonStudentApp
                     return;
                 }
 
-                // Use plain text password (no hashing in this case for simplicity, but recommend hashing)
+                // Useing plain text password (no hashing in this case for simplicity)
                 string plainPassword = PasswordTextBox.Text.Trim();
 
                 using (SqlConnection conn = new SqlConnection(connectionString))
