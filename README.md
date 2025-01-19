@@ -85,13 +85,13 @@ Do logowania w aplikacji można użyć poniższych danych:
 
 **Author**: Jakub Pleban  
 **Student ID**: 61998  
-**Course**: Projektowanie Aplikacji Wielowarstwowych  
+**Course**: Designing Multi-Layer Applications  
 
 ---
 
 ## Overview
 
-This is a multi-layered web application designed as a project for the *Projektowanie Aplikacji Wielowarstwowych* course. The **Student Registration System** allows users to manage and interact with courses in various roles such as Admin, Student, or Teacher.
+This is a multi-layered web application designed as a project for the *Designing Multi-Layer Applications* course. The **Student Registration System** allows users to manage and interact with courses in various roles such as Admin, Student, or Teacher.
 
 ---
 

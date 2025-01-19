@@ -126,7 +126,6 @@
     <Content Include="Default.aspx" />
     <Content Include="favicon.ico" />
     <Content Include="Global.asax" />
-    <Content Include="Grades.aspx" />
     <Content Include="Login.aspx" />
     <Content Include="Logout.aspx" />
     <Content Include="ManageUsers.aspx" />
@@ -190,7 +189,6 @@
     <Content Include="Site.Master" />
     <Content Include="StudentDashboard.aspx" />
     <Content Include="TeacherDashboard.aspx" />
-    <Content Include="test.aspx" />
     <None Include="README.md" />
     <Content Include="Unauthorized.aspx" />
     <Content Include="ViewSwitcher.ascx" />
@@ -232,14 +230,6 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
-    <Compile Include="Grades.aspx.cs">
-      <DependentUpon>Grades.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="Grades.aspx.designer.cs">
-      <DependentUpon>Grades.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="Helper.cs" />
     <Compile Include="Login.aspx.cs">
       <DependentUpon>Login.aspx</DependentUpon>
       <SubType>ASPXCodeBehind</SubType>
@@ -296,13 +286,6 @@
     </Compile>
     <Compile Include="TeacherDashboard.aspx.designer.cs">
       <DependentUpon>TeacherDashboard.aspx</DependentUpon>
-    </Compile>
-    <Compile Include="test.aspx.cs">
-      <DependentUpon>test.aspx</DependentUpon>
-      <SubType>ASPXCodeBehind</SubType>
-    </Compile>
-    <Compile Include="test.aspx.designer.cs">
-      <DependentUpon>test.aspx</DependentUpon>
     </Compile>
     <Compile Include="Unauthorized.aspx.cs">
       <DependentUpon>Unauthorized.aspx</DependentUpon>
